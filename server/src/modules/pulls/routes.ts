@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { PrMeta, PrDetail, GitHubClient, PrReviewComment } from '@devdigest/shared';
 import { PrCommentInput } from '@devdigest/shared';
 import * as t from '../../db/schema.js';
@@ -158,6 +158,18 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
         cost_usd: review ? review.costUsd : null,
       };
     });
+  });
+
+  // Quick title search for the repo's PR list filter box.
+  app.get('/repos/:id/pulls/search', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    const q = (req.query as { q?: string }).q ?? '';
+    const rows = await container.db.execute(
+      sql.raw(
+        `SELECT * FROM pull_requests WHERE workspace_id = '${workspaceId}' AND repo_id = '${req.params.id}' AND title ILIKE '%${q}%'`,
+      ),
+    );
+    return rows;
   });
 
   app.get('/pulls/:id', { schema: { params: IdParams } }, async (req): Promise<PrDetail> => {
