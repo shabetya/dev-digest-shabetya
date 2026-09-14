@@ -47,4 +47,4 @@ Next.js 15 (App Router) · React 19 · TanStack Query (all data access via
 | [README.md](README.md) | you need the full UI route map — not for routine edits |
 | [docs/](docs/) | investigating a past design decision or internal flow not covered above |
 | [specs/](specs/) | planning or reviewing an in-flight feature for this package |
-| [INSIGHTS.md](INSIGHTS.md) | you hit a surprising bug or behavior here — check whether it's already explained |
+| [INSIGHTS.md](INSIGHTS.md) | you hit a surprising bug or behavior here — check whether it's already explained, or use the `engineering-insights` skill to append a new one |
