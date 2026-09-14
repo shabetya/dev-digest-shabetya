@@ -90,6 +90,7 @@
       "pullRequest": "Pull request",
       "author": "Author",
       "size": "Size",
+      "cost": "Cost",
       "score": "Score",
       "status": "Status",
       "updated": "Updated"
