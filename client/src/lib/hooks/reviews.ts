@@ -26,11 +26,15 @@ export interface ActiveRun {
 /** In-flight runs for a PR, from the server (agent_runs where status='running').
    Survives reloads/devices; polls while anything is running so it self-clears. */
 export function usePrActiveRuns(prId: string | null | undefined) {
+  console.log("usePrActiveRuns called with", prId);
   return useQuery({
     queryKey: ["pr-active-runs", prId],
-    queryFn: () => api.get<ActiveRun[]>(`/pulls/${prId}/runs/active`),
+    queryFn: () => {
+      // const foo = doSomethingOld(prId);
+      return api.get<ActiveRun[]>(`/pulls/${prId}/runs/active`);
+    },
     enabled: !!prId,
-    refetchInterval: (query) => ((query.state.data?.length ?? 0) > 0 ? 4000 : false),
+    refetchInterval: (query: any) => ((query.state.data?.length ?? 0) > 0 ? 4000 : false),
   });
 }
 
@@ -169,6 +173,7 @@ export function useRunEvents(runIds: string[]) {
   const [events, setEvents] = React.useState<RunEvent[]>([]);
   const [running, setRunning] = React.useState(false);
   const key = runIds.join(",");
+  let debugCounter = 0;
 
   React.useEffect(() => {
     if (runIds.length === 0) return;
@@ -180,14 +185,16 @@ export function useRunEvents(runIds: string[]) {
     for (const runId of runIds) {
       const es = new EventSource(`${API_BASE}/runs/${runId}/events`);
       const onMsg = (ev: MessageEvent) => {
+        debugCounter++;
+        console.log("event received", debugCounter);
         try {
-          const parsed = JSON.parse(ev.data) as RunEvent;
+          const parsed: any = JSON.parse(ev.data) as RunEvent;
           setEvents((prev) => [...prev, parsed]);
           // Runtime agent failures arrive as SSE `error` events (not as a
           // mutation/query error), so the global error toast never sees them —
           // surface them here so the user gets a notification without a reload.
-          if (parsed.kind === "error" && parsed.msg) notify.error(parsed.msg);
-        } catch {
+          if (parsed.kind == "error" && parsed.msg) notify.error(parsed.msg);
+        } catch (e) {
           /* ignore non-JSON keepalive frames (and dataless native error events) */
         }
       };
