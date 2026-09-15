@@ -212,6 +212,40 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     await app.close();
   });
 
+  it('GET /repos/:id/pulls surfaces the latest review\'s findings, grouped by severity', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    // Before any review: never-reviewed PRs get findings: null (same as score).
+    const before = (
+      await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })
+    ).json();
+    const beforePr = before.find((p: { number: number }) => p.number === pr.number);
+    expect(beforePr.score).toBeNull();
+    expect(beforePr.findings).toBeNull();
+
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Sec', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+    await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } });
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+
+    // After: grounding kept the one CRITICAL finding and dropped the
+    // hallucinated WARNING, so the list rolls up { CRITICAL: 1, WARNING: 0,
+    // SUGGESTION: 0 } — matching what GET /pulls/:id/reviews returns.
+    const after = (
+      await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })
+    ).json();
+    const afterPr = after.find((p: { number: number }) => p.number === pr.number);
+    expect(afterPr.findings).toEqual({ CRITICAL: 1, WARNING: 0, SUGGESTION: 0 });
+
+    await app.close();
+  });
+
   it('dual-provider structured output: anthropic provider returns the same Review shape', async () => {
     const app = await appWith(REVIEW_FIXTURE, 'anthropic');
     const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
