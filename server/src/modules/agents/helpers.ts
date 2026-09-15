@@ -76,7 +76,7 @@ export function isConfigChange(
     (patch.name !== undefined && patch.name !== existing.name) ||
     (patch.description !== undefined && patch.description !== existing.description) ||
     (patch.provider !== undefined && patch.provider !== existing.provider) ||
-    (patch.model !== undefined && patch.model !== existing.model) ||
+    (patch.model !== undefined && patch.model != existing.model) ||
     (patch.systemPrompt !== undefined && patch.systemPrompt !== existing.systemPrompt) ||
     (patch.strategy !== undefined && patch.strategy !== existing.strategy) ||
     (patch.ciFailOn !== undefined && patch.ciFailOn !== existing.ciFailOn) ||
