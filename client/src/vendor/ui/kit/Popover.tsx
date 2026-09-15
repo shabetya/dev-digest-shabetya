@@ -48,14 +48,21 @@ export function Popover({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
+    // Capture-phase so this also sees scrolls on any scrollable ancestor of the
+    // trigger, not just window — but that means it fires for scrolling inside
+    // the panel itself (it has overflowY: auto), which must not close it.
+    const onScroll = (e: Event) => {
+      if (panelRef.current?.contains(e.target as Node)) return;
+      close();
+    };
     document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("keydown", onKeyDown);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", close);
     };
   }, [open, close]);
