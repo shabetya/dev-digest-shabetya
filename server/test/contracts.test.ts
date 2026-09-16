@@ -15,6 +15,7 @@ import {
   Settings,
   Repo,
   PrDetail,
+  PrMeta,
 } from '@devdigest/shared';
 
 /**
@@ -206,5 +207,40 @@ describe('platform DTOs', () => {
         commits: [],
       }),
     ).not.toThrow();
+  });
+
+  it('PrMeta parses with and without a findings breakdown', () => {
+    const reviewed = PrMeta.parse({
+      number: 482,
+      title: 't',
+      author: 'a',
+      branch: 'b',
+      base: 'main',
+      head_sha: 'sha',
+      additions: 1,
+      deletions: 0,
+      files_count: 1,
+      status: 'open',
+      score: 61,
+      cost_usd: 0.014,
+      findings: { CRITICAL: 2, WARNING: 1, SUGGESTION: 0 },
+    });
+    expect(reviewed.findings).toEqual({ CRITICAL: 2, WARNING: 1, SUGGESTION: 0 });
+
+    const unreviewed = PrMeta.parse({
+      number: 483,
+      title: 't2',
+      author: 'a',
+      branch: 'b',
+      base: 'main',
+      head_sha: 'sha',
+      additions: 1,
+      deletions: 0,
+      files_count: 1,
+      status: 'needs_review',
+      score: null,
+      findings: null,
+    });
+    expect(unreviewed.findings).toBeNull();
   });
 });

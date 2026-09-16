@@ -92,6 +92,7 @@
       "size": "Size",
       "cost": "Cost",
       "score": "Score",
+      "findings": "Findings",
       "status": "Status",
       "updated": "Updated"
     },
