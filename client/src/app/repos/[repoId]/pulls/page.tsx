@@ -17,6 +17,7 @@ import { usePulls, useRefreshRepo } from "@/lib/hooks";
 import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
 import { ApiError } from "@/lib/api";
 import { COLUMN_KEYS, SKELETON_ROWS } from "./constants";
+import { filterAndSortPulls } from "./helpers";
 import { s } from "./styles";
 import { PRRow } from "./_components/PRRow";
 import { FilterBar } from "./_components/FilterBar";
@@ -46,16 +47,7 @@ export default function PullsPage() {
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState("newest");
 
-  const q = query.trim().toLowerCase();
-  const filtered = (pulls ?? [])
-    .filter((p) => status === "all" || p.status === status)
-    .filter((p) => !q || p.title.toLowerCase().includes(q) || String(p.number).includes(q))
-    .slice()
-    .sort((a, b) => {
-      const ta = Date.parse(a.updated_at ?? "") || 0;
-      const tb = Date.parse(b.updated_at ?? "") || 0;
-      return sort === "oldest" ? ta - tb : tb - ta;
-    });
+  const filtered = filterAndSortPulls(pulls ?? [], { status, query, sort });
   const repoName = activeRepo?.full_name ?? repoId;
   const openCount = (pulls ?? []).filter((p) => OPEN_STATUSES.has(p.status)).length;
   const needsReviewCount = (pulls ?? []).filter((p) => p.status === "needs_review").length;

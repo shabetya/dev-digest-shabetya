@@ -3,7 +3,7 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { existsSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +35,15 @@ export async function runMigrations(databaseUrl: string): Promise<void> {
 
 // CLI entrypoint
 if (import.meta.url === `file://${process.argv[1]}`) {
+  if (__dirname.includes(`${sep}clones${sep}`)) {
+    console.error(
+      `Refusing to run: this migrate.ts lives inside a cloned repo checkout (${__dirname}).\n` +
+        `clones/ is runtime state for PR review, not a place to run db:migrate — it shares your\n` +
+        `shell's DATABASE_URL with the real dev DB, so applying its migrations here will corrupt\n` +
+        `the shared schema. Run \`pnpm db:migrate\` from the actual server/ package instead.`,
+    );
+    process.exit(1);
+  }
   const url = process.env.DATABASE_URL;
   if (!url) {
     console.error('DATABASE_URL is required');

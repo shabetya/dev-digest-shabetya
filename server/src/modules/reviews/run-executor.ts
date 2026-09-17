@@ -215,24 +215,34 @@ export class ReviewRunExecutor {
 
       const keptFindings = outcome.review.findings;
 
-      // ---- Persist review + findings ----------------------------------------
-      const review = await this.repo.insertReview({
-        workspaceId,
-        prId: pull.id,
-        agentId: agent.id,
-        runId,
-        kind: 'review',
-        verdict: outcome.review.verdict,
-        summary: outcome.review.summary,
-        score: outcome.review.score,
-        model: agent.model,
-      });
-      const findingRows = await this.repo.insertFindings(review.id, keptFindings);
-      runLog.result(`Persisted review ${review.id} with ${findingRows.length} finding(s)`);
+      // ---- Persist review + findings -----------------------------------------
+      // insertReview → insertFindings → markReviewed as one unit of work: a
+      // failure partway through (e.g. the findings insert) must not leave a
+      // review row with no findings, or a PR marked reviewed against a review
+      // that doesn't fully exist.
+      const { review, findingRows } = await this.container.db.transaction(async (tx) => {
+        const review = await this.repo.insertReview(
+          {
+            workspaceId,
+            prId: pull.id,
+            agentId: agent.id,
+            runId,
+            kind: 'review',
+            verdict: outcome.review.verdict,
+            summary: outcome.review.summary,
+            score: outcome.review.score,
+            model: agent.model,
+          },
+          tx,
+        );
+        const findingRows = await this.repo.insertFindings(review.id, keptFindings, tx);
 
-      // Mark the commit this review ran against so the PR list can tell
-      // reviewed / needs-review (head moved) / stale apart.
-      await this.repo.markReviewed(pull.id, pull.headSha);
+        // Mark the commit this review ran against so the PR list can tell
+        // reviewed / needs-review (head moved) / stale apart.
+        await this.repo.markReviewed(pull.id, pull.headSha, tx);
+        return { review, findingRows };
+      });
+      runLog.result(`Persisted review ${review.id} with ${findingRows.length} finding(s)`);
 
       const durationMs = Date.now() - start;
 

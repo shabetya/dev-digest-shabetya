@@ -70,24 +70,30 @@ export async function listRunsForPull(
 
 /**
  * Delete one agent run (+ its trace via FK cascade) AND the review it produced.
- * Workspace-scoped. `reviews.run_id` has no FK to `agent_runs`, so the review
- * (and its findings, which DO cascade from `reviews`) must be removed explicitly
- * here — otherwise deleting a run from the timeline leaves its findings orphaned
- * in the Review Runs list below.
+ * Workspace-scoped. `reviews.run_id` now has a real (ON DELETE SET NULL) FK to
+ * `agent_runs`, which stops a dangling `run_id` from ever existing — but it
+ * would only null the column, not remove the review, so the review (and its
+ * findings, which DO cascade from `reviews`) must still be deleted explicitly
+ * here, otherwise deleting a run from the timeline leaves its review/findings
+ * behind, orphaned from the run that produced them. Both deletes run in one
+ * transaction so a failure partway through can't leave the review gone but the
+ * run still present (or vice versa).
  */
 export async function deleteAgentRun(
   db: Db,
   workspaceId: string,
   runId: string,
 ): Promise<boolean> {
-  await db
-    .delete(t.reviews)
-    .where(and(eq(t.reviews.runId, runId), eq(t.reviews.workspaceId, workspaceId)));
-  const rows = await db
-    .delete(t.agentRuns)
-    .where(and(eq(t.agentRuns.id, runId), eq(t.agentRuns.workspaceId, workspaceId)))
-    .returning({ id: t.agentRuns.id });
-  return rows.length > 0;
+  return db.transaction(async (tx) => {
+    await tx
+      .delete(t.reviews)
+      .where(and(eq(t.reviews.runId, runId), eq(t.reviews.workspaceId, workspaceId)));
+    const rows = await tx
+      .delete(t.agentRuns)
+      .where(and(eq(t.agentRuns.id, runId), eq(t.agentRuns.workspaceId, workspaceId)))
+      .returning({ id: t.agentRuns.id });
+    return rows.length > 0;
+  });
 }
 
 /** Mark a still-running run as cancelled (no-op if it already finished). */

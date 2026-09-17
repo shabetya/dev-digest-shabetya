@@ -1,6 +1,6 @@
-import type { Db } from '../../db/client.js';
+import type { Db, Tx } from '../../db/client.js';
 import * as t from '../../db/schema.js';
-import type { Finding, Intent, RunSummary, RunTrace } from '@devdigest/shared';
+import type { Finding, Intent, RunSummary, RunTrace, Verdict } from '@devdigest/shared';
 
 /**
  * A2 — review data-access. The ONLY layer touching the DB for the review
@@ -41,22 +41,25 @@ export class ReviewRepository {
 
   // ---- reviews + findings -------------------------------------------------
 
-  insertReview(values: {
-    workspaceId: string;
-    prId: string;
-    agentId: string | null;
-    runId: string | null;
-    kind: 'summary' | 'review';
-    verdict: string | null;
-    summary: string | null;
-    score: number | null;
-    model: string | null;
-  }): Promise<ReviewRow> {
-    return reviewRepo.insertReview(this.db, values);
+  insertReview(
+    values: {
+      workspaceId: string;
+      prId: string;
+      agentId: string | null;
+      runId: string | null;
+      kind: 'summary' | 'review';
+      verdict: Verdict | null;
+      summary: string | null;
+      score: number | null;
+      model: string | null;
+    },
+    tx?: Tx,
+  ): Promise<ReviewRow> {
+    return reviewRepo.insertReview(tx ?? this.db, values);
   }
 
-  insertFindings(reviewId: string, findings: Finding[]): Promise<FindingRow[]> {
-    return reviewRepo.insertFindings(this.db, reviewId, findings);
+  insertFindings(reviewId: string, findings: Finding[], tx?: Tx): Promise<FindingRow[]> {
+    return reviewRepo.insertFindings(tx ?? this.db, reviewId, findings);
   }
 
   /** Reviews for a PR (newest first), each with its findings. */
@@ -171,8 +174,8 @@ export class ReviewRepository {
   }
 
   /** Record the head SHA a review ran against (PR-list freshness derivation). */
-  markReviewed(prId: string, sha: string): Promise<void> {
-    return pullRepo.markReviewed(this.db, prId, sha);
+  markReviewed(prId: string, sha: string, tx?: Tx): Promise<void> {
+    return pullRepo.markReviewed(tx ?? this.db, prId, sha);
   }
 
   /** Persist the WHOLE run log as ONE document. PK = runId → agent_runs. */
