@@ -6,6 +6,7 @@ import { Badge, Button, Skeleton } from "@devdigest/ui";
 import type { Skill } from "@devdigest/shared";
 import { useSkillVersions, useUpdateSkill } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
+import { VersionDiff } from "./_components/VersionDiff";
 import { s } from "./styles";
 
 /** Version history — every content-changing save snapshots a `skill_versions`
@@ -17,6 +18,7 @@ export function VersionsTab({ skill }: { skill: Skill }) {
   const toast = useToast();
   const { data: versions, isLoading } = useSkillVersions(skill.id);
   const update = useUpdateSkill();
+  const [diffOpen, setDiffOpen] = React.useState<number | null>(null);
 
   if (isLoading || !versions) {
     return (
@@ -49,27 +51,43 @@ export function VersionsTab({ skill }: { skill: Skill }) {
 
       {versions.length === 0 && <p style={s.empty}>{t("editor.versions.empty")}</p>}
 
-      {versions.map((v) => {
+      {versions.map((v, i) => {
         const isCurrent = v.version === skill.version;
+        const prev = versions[i + 1];
+        const showingDiff = diffOpen === v.version;
         return (
-          <div key={v.version} style={s.row}>
-            <span style={s.versionTag}>v{v.version}</span>
-            {isCurrent && <Badge color="var(--ok)">{t("editor.versions.current")}</Badge>}
-            <span style={s.date}>{new Date(v.created_at).toLocaleString()}</span>
-            <div style={{ marginLeft: "auto" }}>
-              {!isCurrent && (
-                <Button
-                  kind="secondary"
-                  size="sm"
-                  icon="History"
-                  onClick={() => restore(v.version, v.body)}
-                  disabled={update.isPending}
-                >
-                  {update.isPending ? t("editor.versions.restoring") : t("editor.versions.restore")}
-                </Button>
-              )}
+          <React.Fragment key={v.version}>
+            <div style={s.row}>
+              <span style={s.versionTag}>v{v.version}</span>
+              {isCurrent && <Badge color="var(--ok)">{t("editor.versions.current")}</Badge>}
+              <span style={s.date}>{new Date(v.created_at).toLocaleString()}</span>
+              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                {prev && (
+                  <Button
+                    kind="secondary"
+                    size="sm"
+                    icon="GitCompare"
+                    active={showingDiff}
+                    onClick={() => setDiffOpen(showingDiff ? null : v.version)}
+                  >
+                    {t("editor.versions.diff")}
+                  </Button>
+                )}
+                {!isCurrent && (
+                  <Button
+                    kind="secondary"
+                    size="sm"
+                    icon="History"
+                    onClick={() => restore(v.version, v.body)}
+                    disabled={update.isPending}
+                  >
+                    {update.isPending ? t("editor.versions.restoring") : t("editor.versions.restore")}
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+            {showingDiff && prev && <VersionDiff oldBody={prev.body} newBody={v.body} />}
+          </React.Fragment>
         );
       })}
     </div>

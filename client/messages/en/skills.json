@@ -164,6 +164,7 @@
       "count": "{count} versions",
       "current": "Current",
       "view": "View",
+      "diff": "Diff",
       "restore": "Restore",
       "restoring": "Restoring…",
       "restored": "Restored v{version} as the new current version",
