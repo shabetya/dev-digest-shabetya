@@ -63,10 +63,7 @@ export class AgentsRepository {
   }
 
   async getById(workspaceId: string, id: string): Promise<AgentRow | undefined> {
-    const [row] = await this.db
-      .select()
-      .from(t.agents)
-      .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.id, id)));
+    const [row] = await this.db.select().from(t.agents).where(eq(t.agents.id, id));
     return row;
   }
 

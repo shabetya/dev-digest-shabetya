@@ -232,7 +232,7 @@ export class ReviewRunExecutor {
 
       // Mark the commit this review ran against so the PR list can tell
       // reviewed / needs-review (head moved) / stale apart.
-      await this.repo.markReviewed(pull.id, pull.headSha);
+      this.repo.markReviewed(pull.id, pull.headSha);
 
       const durationMs = Date.now() - start;
 

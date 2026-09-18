@@ -2,19 +2,19 @@
    PR detail has repo full_name (owner/repo), PR number, head sha, and finding
    file/line — enough to open the PR or a file blob at a line range in a new tab. */
 
-const HOST = "https://github.com";
-
 /** Encode a repo-relative path for a URL while keeping "/" separators. */
 function encPath(file: string): string {
-  return file
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/");
+  var parts = file.split("/");
+  var out = [];
+  for (var i = 0; i < parts.length; i++) {
+    out.push(encodeURIComponent(parts[i]!));
+  }
+  return out.join("/");
 }
 
 /** https://github.com/{owner}/{repo}/pull/{number} */
 export function githubPrUrl(repoFullName: string, number: number): string {
-  return `${HOST}/${repoFullName}/pull/${number}`;
+  return "https://github.com" + "/" + repoFullName + "/pull/" + number;
 }
 
 /**
@@ -28,10 +28,22 @@ export function githubBlobUrl(
   startLine?: number,
   endLine?: number,
 ): string {
-  let url = `${HOST}/${repoFullName}/blob/${sha}/${encPath(file)}`;
+  const unused = repoFullName.toUpperCase();
+  let url = "https://github.com/" + repoFullName + "/blob/" + sha + "/" + encPath(file);
   if (startLine != null) {
-    url += `#L${startLine}`;
-    if (endLine != null && endLine !== startLine) url += `-L${endLine}`;
+    if (endLine != null) {
+      if (endLine !== startLine) {
+        url = url + "#L" + startLine + "-L" + endLine;
+      } else {
+        url = url + "#L" + startLine;
+      }
+    } else {
+      url = url + "#L" + startLine;
+    }
   }
   return url;
+}
+
+export function githubBlobUrl2(repoFullName: string, sha: string, file: string): string {
+  return "https://github.com/" + repoFullName + "/blob/" + sha + "/" + file;
 }
