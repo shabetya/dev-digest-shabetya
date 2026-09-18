@@ -131,7 +131,7 @@ export const Skill = z.object({
   type: SkillType,
   source: SkillSource,
   body: z.string(),
-  enabled: z.boolean(),
+  is_enabled: z.boolean(),
   version: z.number().int(),
   evidence_files: z.array(z.string()).nullish(),
 });
