@@ -13,11 +13,15 @@ export function Donut({
   size = 130,
   stroke = 22,
   valuePrefix = "$",
+  decimals = 2,
 }: {
   segments: DonutSegment[];
   size?: number;
   stroke?: number;
   valuePrefix?: string;
+  /** Decimal places in the legend's value (default 2, e.g. "$12.34"). Pass 0
+      for a plain count (e.g. finding totals) instead of a currency amount. */
+  decimals?: number;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -47,7 +51,7 @@ export function Donut({
             <span style={{ color: "var(--text-secondary)", flex: 1 }}>{s.label}</span>
             <span className="mono tnum" style={{ color: "var(--text-primary)", fontWeight: 600 }}>
               {valuePrefix}
-              {s.value.toFixed(2)}
+              {s.value.toFixed(decimals)}
             </span>
           </div>
         ))}

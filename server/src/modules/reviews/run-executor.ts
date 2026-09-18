@@ -184,6 +184,26 @@ export class ReviewRunExecutor {
 
       const task = taskLine(pull) + rankNote;
 
+      // Skills — linked skills whose OWN `enabled` flag is also true (a link
+      // alone isn't enough; both gates must pass before a body reaches the
+      // prompt). Unfiltered links stay visible in the Agent editor's Skills
+      // tab; this run path is the only place that applies the enabled gate.
+      const linkedSkills = await this.agents.linkedSkills(agent.id);
+      const promptSkills = linkedSkills.filter((l) => l.skill.enabled);
+      const skillBodies = promptSkills.map((l) => l.skill.body);
+      // Computed once, reused for both the trace breakdown and the
+      // run_skills rows below (avoids counting each skill's tokens twice).
+      const skillTokenCounts = promptSkills.map((l) => this.container.tokenizer.count(l.skill.body));
+      const skillsDetail = promptSkills.map((l, i) => ({
+        skill_id: l.skill.id,
+        name: l.skill.name,
+        body: l.skill.body,
+        tokens: skillTokenCounts[i]!,
+      }));
+      if (skillsDetail.length > 0) {
+        runLog.info(`skills: ${skillsDetail.length} enabled skill(s) attached`);
+      }
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -196,6 +216,9 @@ export class ReviewRunExecutor {
         // Per-agent review strategy (configured in the Agent editor); falls back
         // to the studio default. single-pass = whole diff in one call.
         strategy: agent.strategy ?? REVIEW_STRATEGY,
+        // Linked, enabled skill bodies, in order — omitted (not an empty array)
+        // when none apply, matching every other optional slot's contract.
+        ...(skillBodies.length > 0 ? { skills: skillBodies } : {}),
         // T1.3 — pass the callers digest only when we built one. assemblePrompt
         // omits the section when this is empty/undefined.
         ...(callersDigest ? { callers: callersDigest } : {}),
@@ -240,6 +263,19 @@ export class ReviewRunExecutor {
         // Mark the commit this review ran against so the PR list can tell
         // reviewed / needs-review (head moved) / stale apart.
         await this.repo.markReviewed(pull.id, pull.headSha, tx);
+
+        // Queryable counterpart to skills_detail (§ Skill Stats) — which
+        // skills were active in this run, for aggregation without parsing
+        // the run_traces jsonb blob. Same transaction: a run's skills are
+        // only meaningful once its review actually exists.
+        if (promptSkills.length > 0) {
+          await this.repo.insertRunSkills(
+            runId,
+            promptSkills.map((l, i) => ({ skillId: l.skill.id, tokens: skillTokenCounts[i]! })),
+            tx,
+          );
+        }
+
         return { review, findingRows };
       });
       runLog.result(`Persisted review ${review.id} with ${findingRows.length} finding(s)`);
@@ -282,6 +318,7 @@ export class ReviewRunExecutor {
           grounding,
         },
         prompt_assembly: outcome.assembly,
+        skills_detail: skillsDetail.length > 0 ? skillsDetail : null,
         tool_calls: outcome.chunks.map((c) => ({
           tool: 'review_file',
           args: c.label,
@@ -437,6 +474,8 @@ export class ReviewRunExecutor {
       },
       stats: { duration_ms: durationMs, tokens_in: 0, tokens_out: 0, cost_usd: null, findings: 0, grounding },
       prompt_assembly: { system: agent.systemPrompt, skills: null, memory: null, specs: null, user: '' },
+      // Best-effort: a pre-LLM-call failure may not have resolved skills yet.
+      skills_detail: null,
       tool_calls: [],
       raw_output: '',
       memory_pulled: [],

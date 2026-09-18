@@ -73,8 +73,18 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
 
       <TraceSection icon="FileText" title={t("trace.promptAssembly")} defaultOpen={false}>
         <PromptBlock label={t("trace.prompt.system")} text={trace.prompt_assembly.system} color={PROMPT_COLORS.system} />
-        {trace.prompt_assembly.skills != null && (
-          <PromptBlock label={t("trace.prompt.skills")} text={trace.prompt_assembly.skills} color={PROMPT_COLORS.skills} />
+        {trace.skills_detail != null && trace.skills_detail.length > 0 ? (
+          // Per-skill breakdown — one block per linked+enabled skill, labelled
+          // with its own token count. A disabled/unlinked skill never appears
+          // here (run-executor only puts enabled links into skills_detail).
+          trace.skills_detail.map((sd, i) => (
+            <PromptBlock key={i} label={`${sd.name} — ${sd.tokens} tok`} text={sd.body} color={PROMPT_COLORS.skills} />
+          ))
+        ) : (
+          // Fallback for traces persisted before skills_detail existed.
+          trace.prompt_assembly.skills != null && (
+            <PromptBlock label={t("trace.prompt.skills")} text={trace.prompt_assembly.skills} color={PROMPT_COLORS.skills} />
+          )
         )}
         {trace.prompt_assembly.memory != null && (
           <PromptBlock label={t("trace.prompt.memory")} text={trace.prompt_assembly.memory} color={PROMPT_COLORS.memory} />

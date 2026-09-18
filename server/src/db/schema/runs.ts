@@ -1,8 +1,20 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, uuid, text, integer, jsonb, timestamp, doublePrecision, index, check } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  integer,
+  jsonb,
+  timestamp,
+  doublePrecision,
+  index,
+  check,
+  primaryKey,
+} from 'drizzle-orm/pg-core';
 import { workspaces } from './core';
 import { agents } from './agents';
 import { pullRequests } from './pulls';
+import { skills } from './skills';
 
 // ============================================================ Observability
 
@@ -55,6 +67,29 @@ export const runTraces = pgTable('run_traces', {
     .references(() => agentRuns.id, { onDelete: 'cascade' }),
   trace: jsonb('trace').notNull(),
 });
+
+/** Which skills were active (linked + enabled) in a given run, and how many
+ *  tokens each contributed — the queryable counterpart to
+ *  `run_traces.trace.skills_detail` (a jsonb blob), used by the Skill Stats
+ *  tab to aggregate without parsing JSON. Only written for runs that reached
+ *  a persisted review (see run-executor.ts) — a failed/cancelled run has no
+ *  rows here. */
+export const runSkills = pgTable(
+  'run_skills',
+  {
+    runId: uuid('run_id')
+      .notNull()
+      .references(() => agentRuns.id, { onDelete: 'cascade' }),
+    skillId: uuid('skill_id')
+      .notNull()
+      .references(() => skills.id, { onDelete: 'cascade' }),
+    tokens: integer('tokens').notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.runId, t.skillId] }),
+    skillIdx: index('run_skills_skill_idx').on(t.skillId),
+  }),
+);
 
 export const multiAgentRuns = pgTable('multi_agent_runs', {
   id: uuid('id').primaryKey().defaultRandom(),

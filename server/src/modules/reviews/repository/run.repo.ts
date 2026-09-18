@@ -1,5 +1,5 @@
 import { and, desc, eq } from 'drizzle-orm';
-import type { Db } from '../../../db/client.js';
+import type { Db, Tx } from '../../../db/client.js';
 import * as t from '../../../db/schema.js';
 import type { RunSummary, RunTrace } from '@devdigest/shared';
 
@@ -180,6 +180,19 @@ export async function completeAgentRun(
       costUsd: values.costUsd ?? null,
     })
     .where(eq(t.agentRuns.id, runId));
+}
+
+/** Which skills were active in a run (§ Skill Stats) — the queryable
+ *  counterpart to the trace's skills_detail blob. Runs inside the caller's
+ *  transaction (review + findings + run_skills as one unit). No-op for an
+ *  empty list. */
+export async function insertRunSkills(
+  db: Db | Tx,
+  runId: string,
+  entries: { skillId: string; tokens: number }[],
+): Promise<void> {
+  if (entries.length === 0) return;
+  await db.insert(t.runSkills).values(entries.map((e) => ({ runId, skillId: e.skillId, tokens: e.tokens })));
 }
 
 /** Persist the WHOLE run log as ONE document. PK = runId → agent_runs. */

@@ -9,6 +9,9 @@ in the DB). The canonical, reviewable copies live next to this file:
 - [`general-reviewer.md`](./general-reviewer.md)
 - [`security-reviewer.md`](./security-reviewer.md)
 - [`performance-reviewer.md`](./performance-reviewer.md)
+- [`test-quality-reviewer.md`](./test-quality-reviewer.md)
+- [`api-contract-reviewer.md`](./api-contract-reviewer.md)
+- [`pr-self-review.md`](./pr-self-review.md) — manual-only (`enabled: false`); specifics come from whichever skills are linked to it
 
 > The DB is the source of truth at run time. These files are the human-readable
 > originals — when you change a prompt, edit the file here **and** push it to the

@@ -62,6 +62,10 @@ export class ReviewRepository {
     return reviewRepo.insertFindings(tx ?? this.db, reviewId, findings);
   }
 
+  insertRunSkills(runId: string, entries: { skillId: string; tokens: number }[], tx?: Tx): Promise<void> {
+    return runRepo.insertRunSkills(tx ?? this.db, runId, entries);
+  }
+
   /** Reviews for a PR (newest first), each with its findings. */
   reviewsForPull(prId: string): Promise<{ review: ReviewRow; findings: FindingRow[] }[]> {
     return reviewRepo.reviewsForPull(this.db, prId);
