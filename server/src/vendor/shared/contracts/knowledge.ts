@@ -188,13 +188,19 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: z.string(),
   rule: z.string(),
   evidence_path: z.string(),
+  evidence_line_start: z.number().int(),
+  evidence_line_end: z.number().int(),
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
-  accepted: z.boolean(),
+  status: ConventionStatus,
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
 
