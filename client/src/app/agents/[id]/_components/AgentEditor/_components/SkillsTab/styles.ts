@@ -1,0 +1,53 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for SkillsTab. */
+export const s = {
+  wrap: { maxWidth: 760 } satisfies CSSProperties,
+  header: { display: "flex", alignItems: "center", gap: 12, marginBottom: 8 } satisfies CSSProperties,
+  h2: { fontSize: 18, fontWeight: 700 } satisfies CSSProperties,
+  count: { fontSize: 13, color: "var(--text-muted)" } satisfies CSSProperties,
+  hint: { fontSize: 12.5, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 } satisfies CSSProperties,
+  filter: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    borderRadius: 7,
+    border: "1px solid var(--border)",
+    background: "var(--bg-surface)",
+    marginBottom: 14,
+  } satisfies CSSProperties,
+  filterInput: {
+    flex: 1,
+    fontSize: 13,
+    background: "transparent",
+    border: "none",
+    outline: "none",
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  row: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 12px",
+    borderRadius: 7,
+    border: "1px solid var(--border)",
+    background: "var(--bg-elevated)",
+    marginBottom: 8,
+  } satisfies CSSProperties,
+  iconBox: (color: string): CSSProperties => ({
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    background: color + "1a",
+    color,
+    display: "grid",
+    placeItems: "center",
+    flexShrink: 0,
+  }),
+  name: { fontSize: 14, fontWeight: 600, flex: 1 } satisfies CSSProperties,
+  disabledNote: { fontSize: 12, color: "var(--warn, #f59e0b)" } satisfies CSSProperties,
+  moveBtns: { display: "flex", flexDirection: "column", gap: 0 } satisfies CSSProperties,
+  actions: { display: "flex", gap: 10, marginTop: 14 } satisfies CSSProperties,
+  savedNote: { alignSelf: "center", fontSize: 13, color: "var(--ok)" } satisfies CSSProperties,
+} as const;

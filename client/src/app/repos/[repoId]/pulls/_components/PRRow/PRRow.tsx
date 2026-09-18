@@ -7,9 +7,9 @@ import { useTranslations } from "next-intl";
 import { Icon, Avatar, Badge, CircularScore } from "@devdigest/ui";
 import type { PrMeta } from "@/lib/types";
 import { formatCost } from "@/lib/format";
-import { SIZE_COLOR, STATUS_META } from "../../constants";
-import { relativeTime, sizeOf } from "../../helpers";
-import { s } from "../../styles";
+import { SIZE_COLOR, STATUS_META } from "@/app/repos/[repoId]/pulls/constants";
+import { relativeTime, sizeOf } from "@/app/repos/[repoId]/pulls/helpers";
+import { s } from "@/app/repos/[repoId]/pulls/styles";
 import { PrFindingsCell } from "../FindingsSummary";
 
 export function PRRow({

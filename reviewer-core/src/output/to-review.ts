@@ -65,6 +65,29 @@ export interface ToReviewOptions {
   diff?: UnifiedDiff;
 }
 
+/**
+ * Sanitize LLM-generated finding text (`title` / `rationale` / `suggestion`)
+ * before it's interpolated into markdown that becomes a real GitHub review
+ * body/inline comment (posted via octokit downstream, and later rendered by
+ * the client too). This text is untrusted — a prompt-injected diff or PR
+ * description can influence what the model writes here. `INJECTION_GUARD`
+ * (prompt.ts) defends the *prompt* side of that threat model; this defends
+ * the *output* side:
+ *   - collapses newlines so a finding can't inject its own markdown lines
+ *     (e.g. a fake "- 🔴 **title**" bullet, or break out into a new heading)
+ *   - escapes raw `<`/`>` so an embedded `<script>` or other HTML tag can't
+ *     be interpreted as markup wherever this markdown is rendered as HTML
+ *   - neutralizes dangerous URL schemes (`javascript:`, `data:`, `vbscript:`)
+ *     so a fake `[text](javascript:...)` markdown link can't execute
+ */
+function sanitizeFindingText(text: string): string {
+  return text
+    .replace(/\r\n|\r|\n/g, ' ')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/(javascript|data|vbscript):/gi, '$1&#58;');
+}
+
 function severityCounts(findings: Finding[]): string {
   const c: Record<string, number> = { CRITICAL: 0, WARNING: 0, SUGGESTION: 0 };
   for (const f of findings) c[f.severity] = (c[f.severity] ?? 0) + 1;
@@ -88,8 +111,10 @@ function composeBody(
   const lines = findings.map((f) => {
     const emoji = SEV_EMOJI[f.severity] ?? '•';
     const loc = `\`${f.file}:${f.start_line}${f.end_line !== f.start_line ? `-${f.end_line}` : ''}\``;
-    const sugg = f.suggestion ? `\n  - _Suggestion:_ ${f.suggestion}` : '';
-    return `- ${emoji} **${f.title}** (${f.severity.toLowerCase()}, ${f.category}) — ${loc}\n  - ${f.rationale}${sugg}`;
+    const title = sanitizeFindingText(f.title);
+    const rationale = sanitizeFindingText(f.rationale);
+    const sugg = f.suggestion ? `\n  - _Suggestion:_ ${sanitizeFindingText(f.suggestion)}` : '';
+    return `- ${emoji} **${title}** (${f.severity.toLowerCase()}, ${f.category}) — ${loc}\n  - ${rationale}${sugg}`;
   });
 
   const summary = `**${findings.length} finding${findings.length === 1 ? '' : 's'}** · ${severityCounts(findings)}`;
@@ -134,11 +159,13 @@ function inlineComments(
       ? resolveCommentLine(lineIndex.get(f.file) ?? new Set<number>(), f.start_line, f.end_line)
       : f.end_line;
     if (line == null) continue;
+    const title = sanitizeFindingText(f.title);
+    const rationale = sanitizeFindingText(f.rationale);
     out.push({
       path: f.file,
       line,
-      body: `**${f.title}** (${f.severity.toLowerCase()})\n\n${f.rationale}${
-        f.suggestion ? `\n\n_Suggestion:_ ${f.suggestion}` : ''
+      body: `**${title}** (${f.severity.toLowerCase()})\n\n${rationale}${
+        f.suggestion ? `\n\n_Suggestion:_ ${sanitizeFindingText(f.suggestion)}` : ''
       }`,
     });
   }

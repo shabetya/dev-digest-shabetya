@@ -51,6 +51,19 @@ export const PromptAssembly = z.object({
 });
 export type PromptAssembly = z.infer<typeof PromptAssembly>;
 
+/** One linked, enabled skill's contribution to a run's prompt (observability
+    only — computed by the server caller, not part of PromptAssembly). */
+export const SkillPromptDetail = z.object({
+  /** Nullish: no current consumer parses old persisted traces at runtime, but
+      this keeps a historical row (from before this field existed) valid if
+      one ever does. */
+  skill_id: z.string().nullish(),
+  name: z.string(),
+  tokens: z.number().int(),
+  body: z.string(),
+});
+export type SkillPromptDetail = z.infer<typeof SkillPromptDetail>;
+
 export const MemoryPulled = z.object({
   pr: z.number().int().nullish(),
   text: z.string(),
@@ -80,6 +93,10 @@ export const RunTrace = z.object({
   }),
   stats: RunStats,
   prompt_assembly: PromptAssembly,
+  /** Per-skill breakdown (name + token count + body) of the linked, enabled
+      skills that went into this run's prompt; null/absent when none did
+      (including traces persisted before this field existed). */
+  skills_detail: z.array(SkillPromptDetail).nullish(),
   tool_calls: z.array(ToolCall),
   raw_output: z.string(),
   memory_pulled: z.array(MemoryPulled),

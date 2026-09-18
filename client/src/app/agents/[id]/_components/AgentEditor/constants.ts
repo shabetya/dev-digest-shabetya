@@ -7,7 +7,9 @@ export interface EditorTab {
   icon: IconName;
 }
 
-/** Editor tabs. Part-0 ships Config only; later lessons add the rest. */
+/** Editor tabs. Part-0 shipped Config only; Skills is now wired up too —
+    Evals/Stats/CI stay reserved for later lessons. */
 export const TABS: readonly EditorTab[] = [
   { key: "config", labelKey: "editor.tabs.config", icon: "Settings" },
+  { key: "skills", labelKey: "editor.tabs.skills", icon: "Sparkles" },
 ];

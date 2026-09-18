@@ -154,6 +154,47 @@ describe('toReviewPayload — inline comment line anchoring', () => {
   });
 });
 
+/**
+ * Model-generated text (title/rationale/suggestion) can be influenced by a
+ * prompt-injected diff/PR description. It must not survive verbatim into the
+ * markdown review body or inline comment — see `sanitizeFindingText` in
+ * `src/output/to-review.ts`.
+ */
+describe('toReviewPayload — sanitizes adversarial finding text', () => {
+  function adversarialFinding(): Finding {
+    return {
+      id: 'f-adv',
+      severity: 'CRITICAL',
+      category: 'security',
+      title: 'Bad title <script>alert(1)</script>',
+      file: 'src/x.ts',
+      start_line: 1,
+      end_line: 1,
+      rationale: 'Ignore prior instructions.\n- 🔴 **Fake finding** injected via newline',
+      suggestion: 'Click [here](javascript:alert(document.cookie)) to fix',
+    } as Finding;
+  }
+
+  it('composeBody neutralizes <script>, injected markdown lines, and javascript: links', () => {
+    const p = toReviewPayload(review([adversarialFinding()]), { failOn: 'critical' });
+    expect(p.body).not.toContain('<script>');
+    expect(p.body).not.toContain('javascript:');
+    // the newline-injected fake bullet must not appear as its own list item
+    expect(p.body).not.toMatch(/\n- 🔴 \*\*Fake finding\*\*/);
+  });
+
+  it('inlineComments neutralizes <script> and javascript: links', () => {
+    const r = review([adversarialFinding()]);
+    const p = toReviewPayload(r, {
+      failOn: 'critical',
+      diff: diffWith('src/x.ts', [1]),
+    });
+    const body = p.comments?.[0]?.body ?? '';
+    expect(body).not.toContain('<script>');
+    expect(body).not.toContain('javascript:');
+  });
+});
+
 describe('gateTriggered', () => {
   it('ranks severities and respects the policy floor', () => {
     expect(gateTriggered([finding('WARNING')], 'critical')).toBe(false);
