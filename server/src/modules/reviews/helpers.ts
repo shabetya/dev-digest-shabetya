@@ -2,7 +2,7 @@
  * Pure helpers for the review service (side-effect free; operate purely on
  * their arguments — no DB / network / `this`).
  */
-import type { Finding } from '@devdigest/shared';
+import { Severity, FindingCategory, FindingKind, type Finding } from '@devdigest/shared';
 import type { FindingRow, PullRow, ReviewRow } from './repository.js';
 
 // reduceReviews + sliceDiff live in @devdigest/reviewer-core (pure engine logic
@@ -31,11 +31,19 @@ export interface ReviewDto {
   findings: ReviewDtoFinding[];
 }
 
+/**
+ * `severity`/`category`/`kind` come back from Postgres as bare strings — the
+ * DB now CHECKs them, but a legacy/corrupted row would previously have flowed
+ * an out-of-enum value straight into CI-blocking logic (`countBlockers`) via
+ * an unchecked cast. Parsing through the zod enum makes that throw loudly
+ * instead (an invariant violation in the domain is a bug, not a soft
+ * failure) — see the `zod` skill's parse-don't-validate guidance.
+ */
 export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
   return {
     id: row.id,
-    severity: row.severity as Finding['severity'],
-    category: row.category as Finding['category'],
+    severity: Severity.parse(row.severity),
+    category: FindingCategory.parse(row.category),
     title: row.title,
     file: row.file,
     start_line: row.startLine,
@@ -43,7 +51,7 @@ export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
     rationale: row.rationale,
     suggestion: row.suggestion ?? null,
     confidence: row.confidence,
-    kind: (row.kind as Finding['kind']) ?? 'finding',
+    kind: FindingKind.parse(row.kind),
     trifecta_components: (row.trifectaComponents as Finding['trifecta_components']) ?? null,
     evidence: null,
     review_id: row.reviewId,
@@ -63,7 +71,7 @@ export function reviewToDto(
     agent_id: review.agentId,
     run_id: review.runId,
     agent_name: agentName ?? null,
-    kind: review.kind as 'summary' | 'review',
+    kind: review.kind,
     verdict: review.verdict,
     summary: review.summary,
     score: review.score,

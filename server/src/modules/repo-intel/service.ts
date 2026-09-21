@@ -631,6 +631,21 @@ export class RepoIntelService implements RepoIntel {
     return this.getTopFilesByRank(repoId, n);
   }
 
+  /** Raw content of specific repo-relative paths, skipping any that don't exist/aren't readable. */
+  async getFileContents(
+    repoId: string,
+    paths: string[],
+  ): Promise<{ path: string; content: string }[]> {
+    const repo = await this.repo.getRepoBasics(repoId);
+    if (!repo || !repo.clonePath || paths.length === 0) return [];
+    const out: { path: string; content: string }[] = [];
+    for (const path of paths) {
+      const content = await readClone(repo.clonePath, path);
+      if (content !== null) out.push({ path, content });
+    }
+    return out;
+  }
+
   /**
    * Top-N file paths by rank DESC, dropping tests/configs/migrations and any
    * caller-supplied `exclude` substrings. Over-fetches by 10× before filtering

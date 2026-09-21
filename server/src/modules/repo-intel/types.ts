@@ -161,6 +161,8 @@ export interface RepoIntel {
   getUnresolvedReferences(repoId: string, files: string[]): Promise<RefRow[]>;
   /** Top-N file paths by rank, filtered of tests/configs. */
   getConventionSamples(repoId: string, n: number): Promise<string[]>;
+  /** Raw content of specific repo-relative paths, skipping any that don't exist/aren't readable. */
+  getFileContents(repoId: string, paths: string[]): Promise<{ path: string; content: string }[]>;
 
   // --- T3: onboarding reading-path + critical paths (graph required) ------
   getTopFilesByRank(

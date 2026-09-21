@@ -115,7 +115,13 @@ export type MemoryItem = z.infer<typeof MemoryItem>;
 export const SkillType = z.enum(['rubric', 'convention', 'security', 'custom']);
 export type SkillType = z.infer<typeof SkillType>;
 
-export const SkillSource = z.enum(['manual', 'imported_url', 'extracted', 'community']);
+export const SkillSource = z.enum([
+  'manual',
+  'imported_url',
+  'imported_file',
+  'extracted',
+  'community',
+]);
 export type SkillSource = z.infer<typeof SkillSource>;
 
 export const Skill = z.object({
@@ -131,6 +137,47 @@ export const Skill = z.object({
 });
 export type Skill = z.infer<typeof Skill>;
 
+/** One agent this skill is currently linked to (Skill Stats "used by"). */
+export const SkillUsingAgent = z.object({
+  agent_id: z.string(),
+  agent_name: z.string(),
+  agent_enabled: z.boolean(),
+});
+export type SkillUsingAgent = z.infer<typeof SkillUsingAgent>;
+
+export const SkillFindingsByCategory = z.object({
+  category: z.string(),
+  count: z.number().int(),
+});
+export type SkillFindingsByCategory = z.infer<typeof SkillFindingsByCategory>;
+
+/**
+ * GET /skills/:id/stats — real, non-fabricated per-skill usage/acceptance
+ * numbers, scoped to runs where this skill was linked+enabled (via
+ * `run_skills`). `request_changes_rate` is this skill's reading of "pull
+ * frequency": the share of its completed runs whose review requested
+ * changes — there's no PR-eligibility/coverage tracking to support a literal
+ * "reviewed vs. eligible" reading.
+ */
+export const SkillStats = z.object({
+  skill_id: z.string(),
+  used_by_agents: z.array(SkillUsingAgent),
+  runs_total: z.number().int(),
+  runs_done: z.number().int(),
+  request_changes_rate: z.number().nullable(),
+  findings_total: z.number().int(),
+  findings_last_30d: z.number().int(),
+  accepted: z.number().int(),
+  dismissed: z.number().int(),
+  pending: z.number().int(),
+  accept_rate: z.number().nullable(),
+  dismiss_rate: z.number().nullable(),
+  findings_by_category: z.array(SkillFindingsByCategory),
+  avg_cost_usd: z.number().nullable(),
+  last_run_at: z.string().nullable(),
+});
+export type SkillStats = z.infer<typeof SkillStats>;
+
 export const CommunitySkill = z.object({
   name: z.string(),
   repo: z.string(),
@@ -141,13 +188,19 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: z.string(),
   rule: z.string(),
   evidence_path: z.string(),
+  evidence_line_start: z.number().int(),
+  evidence_line_end: z.number().int(),
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
-  accepted: z.boolean(),
+  status: ConventionStatus,
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
 

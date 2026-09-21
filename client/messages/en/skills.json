@@ -7,6 +7,7 @@
     "searchPlaceholder": "Search skills…",
     "loadError": "Could not load skills.",
     "menu": {
+      "createNew": "Create new",
       "fromFile": "Import from file",
       "fromUrl": "Import from URL",
       "community": "Search community skills…"
@@ -41,9 +42,15 @@
     "importFailed": "Import failed"
   },
   "file": {
+    "chooseFile": "Choose a .md file…",
+    "chosenFile": "Selected: {filename}",
+    "trustWarning": "Importing someone else's skill means their instructions become part of your agent's prompt. Review the body below before enabling it.",
+    "typeLabel": "Type",
     "nameLabel": "Skill name",
     "nameHint": "Optional — derived from the first heading if blank.",
     "namePlaceholder": "pr-quality-rubric",
+    "descriptionLabel": "Description",
+    "descriptionHint": "Write this as a directive — it's the skill's interface.",
     "bodyLabel": "Skill body (Markdown)",
     "bodyHint": "Pasted content is wrapped as untrusted data — never executed as instructions.",
     "bodyPlaceholder": "# Rule\nDescribe the rule…",
@@ -84,7 +91,8 @@
       "manual": "Manual",
       "extracted": "Extracted",
       "community": "Community",
-      "imported_url": "Imported"
+      "imported_url": "Imported",
+      "imported_file": "Imported file"
     }
   },
   "preview": {
@@ -97,5 +105,84 @@
     "bodyLabel": "Skill body (Markdown)",
     "bodyHint": "Saving a changed body creates a new immutable version.",
     "version": "v{version}"
+  },
+  "create": {
+    "title": "Create a skill",
+    "subtitle": "Author a new reusable skill from scratch",
+    "fields": {
+      "name": "Name",
+      "namePlaceholder": "pr-quality-rubric",
+      "description": "Description",
+      "descriptionPlaceholder": "Flag any test file that only covers the happy path.",
+      "descriptionHint": "Write this as a directive — it's the skill's interface, telling an agent exactly when and how to use it.",
+      "type": "Type",
+      "body": "Skill body (Markdown)",
+      "bodyPlaceholder": "# Rule\nDescribe the rule…"
+    },
+    "cancel": "Cancel",
+    "create": "Create",
+    "creating": "Creating…"
+  },
+  "editor": {
+    "runOnEvals": "Run on evals",
+    "runOnEvalsHint": "Evals arrive in a later lesson.",
+    "tabs": {
+      "config": "Config",
+      "preview": "Preview",
+      "evals": "Evals",
+      "stats": "Stats",
+      "versions": "Versions"
+    },
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enabled",
+      "name": "Name",
+      "description": "Description",
+      "descriptionHint": "Write this as a directive — it's the skill's interface, telling an agent exactly when and how to use it.",
+      "type": "Type",
+      "body": "Skill body",
+      "bodyHint": "Markdown. Saving a changed body creates a new immutable version.",
+      "unsaved": "unsaved",
+      "tokens": "{count} tokens",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved (v{version})"
+    },
+    "previewTab": {
+      "title": "Preview",
+      "subtitle": "Rendered as the reviewing agent receives it.",
+      "empty": "Nothing to preview yet — add a body in Config."
+    },
+    "reserved": {
+      "evalsTitle": "Evals",
+      "evalsBody": "Running this skill against eval cases arrives in a later lesson.",
+      "statsTitle": "Stats",
+      "statsBody": "Per-skill usage and acceptance analytics arrive in a later lesson."
+    },
+    "versions": {
+      "title": "Version history",
+      "count": "{count} versions",
+      "current": "Current",
+      "view": "View",
+      "diff": "Diff",
+      "restore": "Restore",
+      "restoring": "Restoring…",
+      "restored": "Restored v{version} as the new current version",
+      "empty": "No earlier versions yet.",
+      "confirmRestore": "Restore v{version}? This will save its body as a new current version."
+    },
+    "stats": {
+      "usedBy": "Used by",
+      "agentsSuffix": "agents",
+      "pullFrequency": "Pull frequency",
+      "acceptRate": "Accept rate",
+      "findings30d": "Findings (30D)",
+      "categoryHeading": "Findings by category",
+      "agentsHeading": "Agents using this skill",
+      "openAgent": "Open",
+      "emptyTitle": "No runs yet",
+      "emptyBody": "Link this skill to an enabled agent and run a review to see usage and acceptance stats here.",
+      "noCategoryData": "No findings recorded yet."
+    }
   }
 }

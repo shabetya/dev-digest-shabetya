@@ -41,10 +41,45 @@ export const TrifectaEvidence = z.object({
 export type TrifectaEvidence = z.infer<typeof TrifectaEvidence>;
 
 /**
+ * The lethal-trifecta invariant, factored out so it can be applied both to
+ * `Finding` (below) and to `FindingRecord` (review-api.ts, which extends
+ * `FindingShape` with persisted-row fields and needs the same invariant).
+ */
+export function checkTrifectaInvariant(
+  f: {
+    kind?: FindingKind | null;
+    trifecta_components?: TrifectaComponent[] | null;
+    evidence?: TrifectaEvidence[] | null;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const isTrifecta = f.kind === 'lethal_trifecta';
+  if (isTrifecta && (!f.trifecta_components?.length || !f.evidence?.length)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'lethal_trifecta findings require non-empty trifecta_components and evidence',
+      path: ['trifecta_components'],
+    });
+  }
+  if (!isTrifecta && (f.trifecta_components != null || f.evidence != null)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "trifecta_components/evidence are only valid when kind is 'lethal_trifecta'",
+      path: ['kind'],
+    });
+  }
+}
+
+/**
  * Finding — the atomic review unit. `start_line`/`end_line` are used by the
  * citation-grounding gate (must intersect a real diff hunk for diff-findings).
+ *
+ * `FindingShape` is the plain object schema (kept exported so `FindingRecord`
+ * in review-api.ts can still `.extend()` it — `.superRefine()` returns a
+ * `ZodEffects` wrapper, which has no `.extend()`). `Finding` itself is the
+ * refined schema and is what everything else should import.
  */
-export const Finding = z.object({
+export const FindingShape = z.object({
   id: z.string(),
   severity: Severity,
   category: FindingCategory,
@@ -60,6 +95,12 @@ export const Finding = z.object({
   trifecta_components: z.array(TrifectaComponent).nullish(),
   evidence: z.array(TrifectaEvidence).nullish(),
 });
+
+// Enforces the lethal-trifecta invariant without reshaping the schema into a
+// discriminated union — this object shape is also used to generate the LLM
+// structured-output contract (response_format / forced tool-use), and a
+// discriminated union would change the JSON-schema sent to real providers.
+export const Finding = FindingShape.superRefine(checkTrifectaInvariant);
 export type Finding = z.infer<typeof Finding>;
 
 /** Review — the consolidated structured output of a single agent run. */
