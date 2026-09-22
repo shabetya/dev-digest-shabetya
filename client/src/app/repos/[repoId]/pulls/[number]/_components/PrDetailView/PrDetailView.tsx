@@ -102,6 +102,8 @@ export function PrDetailView({ repoId, number }: { repoId: string; number: strin
             filesCount={pr.files_count}
             files={pr.files}
             canComment={pr.status === "open"}
+            repoFullName={page.repoFullName}
+            headSha={pr.head_sha}
           />
         )}
       </div>

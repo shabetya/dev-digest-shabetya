@@ -52,13 +52,22 @@
   },
   "smartDiff": {
     "coreLabel": "Core",
+    "testsLabel": "Tests",
     "wiringLabel": "Wiring",
+    "docsLabel": "Docs",
     "boilerplateLabel": "Boilerplate",
     "largeTitle": "This PR is large ({lines} changed lines)",
     "largeBody": "Consider splitting it into smaller, focused PRs for easier review:",
     "filesCount": "{count} files",
     "findingLines": "{count} finding-lines",
-    "groupedByRole": "Smart Diff · grouped by role"
+    "groupedByRole": "Smart Diff · grouped by role",
+    "smartOrder": "Smart order",
+    "originalOrder": "Original order",
+    "severityLine": {
+      "blocker": "blocker",
+      "warning": "warning",
+      "suggestion": "suggestion"
+    }
   },
   "list": {
     "breadcrumb": "Pull Requests",

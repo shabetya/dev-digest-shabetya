@@ -1,25 +1,44 @@
 /* CodeLine — one rendered diff line: gutter number, +/- sign, text, plus the
-   hover "+" affordance, any anchored comment threads, and an inline composer. */
+   hover "+" affordance, any anchored comment threads, an inline composer, and
+   (Smart Diff) any anchored finding annotations. */
 "use client";
 
 import React from "react";
-import { commentTargetFor, type CommentThread, type DiffCommentApi, cs } from "../comments";
+import { useTranslations } from "next-intl";
+import { SEV } from "@devdigest/ui";
+import type { FindingRecord } from "@devdigest/shared";
+import { commentTargetFor, type CommentThread, type DiffCommentApi, type DiffFindingsApi, cs } from "../comments";
 import { type Line } from "../helpers";
 import { s, lineRowFor, lineSignFor } from "../styles";
 import { CommentThreadView } from "../CommentThreadView";
 import { InlineComposer } from "../InlineComposer";
+
+/** CRITICAL/WARNING/SUGGESTION → the severity-line i18n key; INFO falls back
+    to "suggestion" (no dedicated copy for it). */
+const SEVERITY_LINE_KEY: Record<string, "blocker" | "warning" | "suggestion"> = {
+  CRITICAL: "blocker",
+  WARNING: "warning",
+  SUGGESTION: "suggestion",
+  INFO: "suggestion",
+};
 
 export function CodeLine({
   ln,
   path,
   threads,
   commenting,
+  findings,
+  findingsApi,
 }: {
   ln: Line;
   path: string;
   threads: CommentThread[];
   commenting?: DiffCommentApi;
+  /** Findings anchored to this line (Smart Diff inline annotations). */
+  findings?: FindingRecord[];
+  findingsApi?: DiffFindingsApi;
 }) {
+  const t = useTranslations("prReview");
   const [hover, setHover] = React.useState(false);
   const [composing, setComposing] = React.useState(false);
 
@@ -78,6 +97,24 @@ export function CodeLine({
           side={target.side}
           onClose={() => setComposing(false)}
         />
+      )}
+
+      {findings && findings.length > 0 && (
+        <div style={cs.findingsWrap}>
+          {findings.map((f) => {
+            const sevColor = SEV[f.severity]?.c ?? SEV.INFO.c;
+            return (
+              <div key={f.id} style={cs.findingRow}>
+                <div style={cs.findingSeverityBar(sevColor)}>
+                  <span style={cs.findingSeverityLabel(sevColor)}>
+                    {t(`smartDiff.severityLine.${SEVERITY_LINE_KEY[f.severity] ?? "suggestion"}`)}
+                  </span>
+                </div>
+                {findingsApi?.renderFinding(f)}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

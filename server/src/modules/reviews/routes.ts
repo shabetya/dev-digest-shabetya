@@ -7,6 +7,7 @@ import { IdParams } from '../_shared/schemas.js';
 import { NotFoundError } from '../../platform/errors.js';
 import { ReviewService } from './service.js';
 import { IntentService } from './intent-service.js';
+import { getSmartDiff } from './smart-diff/service.js';
 
 /**
  * reviews module.
@@ -17,6 +18,7 @@ import { IntentService } from './intent-service.js';
  *   POST   /findings/:id/(accept|dismiss)              → finding actions
  *   GET    /pulls/:id/intent                           → persisted Intent Layer record (or null)
  *   POST   /pulls/:id/intent/extract                   → recompute + persist Intent (Re-evaluate)
+ *   GET    /pulls/:id/smart-diff                       → files grouped by role (Smart Diff), with inline finding lines
  */
 const FINDING_ACTIONS = ['accept', 'dismiss'] as const;
 export default async function reviewsRoutes(appBase: FastifyInstance) {
@@ -133,6 +135,14 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
   app.get('/pulls/:id/reviews', { schema: { params: IdParams } }, async (req) => {
     const { workspaceId } = await getContext(container, req);
     return service.reviewsForPull(workspaceId, req.params.id);
+  });
+
+  // ---- Smart Diff (files grouped by role, with inline finding lines) ------
+  // Read-only — computed on the fly from pr_files + the latest review's
+  // findings; nothing persisted.
+  app.get('/pulls/:id/smart-diff', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return getSmartDiff(container, workspaceId, req.params.id);
   });
 
   // ---- Delete a whole review run (one agent's pass) + its findings --------

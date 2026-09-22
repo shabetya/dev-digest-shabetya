@@ -1,7 +1,8 @@
 /* Inline-comment support for the DiffViewer (Files changed tab).
    Pure helpers + the API shape the viewer needs; React bits live in
    DiffComments.tsx. Comments are GitHub PR review comments, proxied live. */
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import type { FindingActionKind, FindingRecord } from "@devdigest/shared";
 import type { PrReviewComment } from "@/lib/types";
 import type { Line } from "./helpers";
 
@@ -71,6 +72,35 @@ export function keysForLine(ln: Line): string[] {
     if (k) keys.push(k);
   }
   return keys;
+}
+
+// ---- Smart Diff: inline finding annotations --------------------------------
+
+/** What the viewer needs to render + act on inline findings (Smart Diff). */
+export interface DiffFindingsApi {
+  findings: FindingRecord[];
+  pending: boolean;
+  onAction: (findingId: string, action: FindingActionKind) => void;
+  repoFullName?: string | null;
+  headSha?: string | null;
+  /**
+   * Renders the actual finding-card UI (title, rationale, accept/dismiss,
+   * blob link) for one finding. diff-viewer is a shared, cross-tab component
+   * — it owns only the generic severity-bar chrome around whatever this
+   * returns. The concrete card component is route-private, so the route
+   * injects it here instead of diff-viewer importing it directly.
+   */
+  renderFinding: (finding: FindingRecord) => ReactNode;
+}
+
+/**
+ * The key a finding is anchored on. Findings have NO `line` field — only
+ * `start_line`/`end_line` — so this ALWAYS uses `start_line` on the RIGHT
+ * (new) side, matching `keysForLine`'s convention exactly. Using `end_line`,
+ * or omitting the `RIGHT:` prefix, silently fails to render anything.
+ */
+export function findingKey(finding: Pick<FindingRecord, "start_line">): string {
+  return `RIGHT:${finding.start_line}`;
 }
 
 /** The (line, side) a "+" on this row should comment on, or null if none. */
@@ -170,4 +200,28 @@ export const cs = {
     letterSpacing: "0.06em",
     color: "var(--text-muted)",
   } satisfies CSSProperties,
+  /** Wrap for one or more inline finding annotations beneath a matched line. */
+  findingsWrap: {
+    margin: "0 14px 8px 58px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  } satisfies CSSProperties,
+  findingRow: { display: "flex", flexDirection: "column" } satisfies CSSProperties,
+  /** Severity-colored left bar + right-aligned severity word above the card. */
+  findingSeverityBar: (color: string): CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
+    padding: "2px 8px",
+    borderLeft: `3px solid ${color}`,
+  }),
+  findingSeverityLabel: (color: string): CSSProperties => ({
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    color,
+  }),
 } as const;
