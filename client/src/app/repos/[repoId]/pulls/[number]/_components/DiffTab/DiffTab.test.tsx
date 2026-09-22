@@ -19,22 +19,20 @@ import { DiffTab } from "./DiffTab";
 
 afterEach(cleanup);
 
-// One file per role, in Smart Diff's fixed display order. `service.ts` is
-// given an artificially large additions count so it's collapsed by default
-// (like docs/boilerplate) — letting the test drive an explicit expand click.
+// One file per role, in Smart Diff's fixed display order. All well under the
+// auto-expand threshold — Smart order force-closes every file regardless of
+// size (unlike the flat Original order view), so smallness alone must not
+// cause any of these to render open.
 const FILES: PrFile[] = [
   {
     path: "src/service.ts",
-    additions: 300,
+    additions: 4,
     deletions: 0,
     patch: "@@ -10,3 +10,4 @@\n   port: 3000,\n+  stripeKey: \"sk_live_xxx\",\n   redisUrl: x,",
   },
   { path: "src/service.test.ts", additions: 4, deletions: 0, patch: "@@ -1,1 +1,2 @@\n it('works');\n+it('works too');" },
   { path: "index.ts", additions: 1, deletions: 0, patch: "@@ -1,1 +1,1 @@\n-export {};\n+export * from './a';" },
   { path: "README.md", additions: 1, deletions: 0, patch: "@@ -1,1 +1,1 @@\n-old\n+new docs line" },
-  // Deliberately SMALL (well under the auto-expand threshold) — the point of
-  // this fixture is to prove `boilerplate` is force-collapsed by Smart Diff
-  // (`initialOpen={false}`), not merely collapsed because it's a big file.
   { path: "pnpm-lock.yaml", additions: 3, deletions: 0, patch: "@@ -1,1 +1,1 @@\n-a\n+lockfile bump line" },
 ];
 
@@ -110,14 +108,22 @@ describe("DiffTab — Smart Diff grouping + toggle (full flow)", () => {
     expect(screen.getByText("pnpm-lock.yaml")).toBeInTheDocument();
 
     // ...and within the now-expanded category, the file itself still starts
-    // collapsed (Smart Diff force-collapses boilerplate files individually
-    // too) — its patch content isn't rendered until its own header is clicked.
+    // collapsed (every Smart Diff file starts closed, not just boilerplate's)
+    // — its patch content isn't rendered until its own header is clicked.
     expect(screen.queryByText("lockfile bump line")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("pnpm-lock.yaml"));
     expect(screen.getByText("lockfile bump line")).toBeInTheDocument();
 
-    // The core file (forced collapsed via a large additions count) shows a
-    // finding-dot indicator while closed...
+    // A tiny file (1 addition) in an always-open group (Wiring) also starts
+    // closed — Smart order force-closes every file regardless of size, so the
+    // tab opens as a scannable list of headers, not an auto-expanded wall of
+    // diffs. This is the behavior distinguishing Smart order from the flat
+    // Original order view, which still auto-expands small files.
+    expect(screen.queryByText("export * from './a';")).not.toBeInTheDocument();
+
+    // The core file (also small — closed for the same reason as every other
+    // file here, not because of its size) shows a finding-dot indicator while
+    // closed...
     const coreHeader = screen.getByText("src/service.ts").closest("div")!;
     expect(within(coreHeader).getByLabelText(/1 finding/i)).toBeInTheDocument();
     expect(screen.queryByText("Hardcoded Stripe secret key")).not.toBeInTheDocument();

@@ -5,7 +5,10 @@
    flat DiffViewer renders) so inline comments + Smart Diff finding
    annotations work identically in both orders. Whole categories fold/unfold
    (not just individual files) via a chevron on the group header, alongside a
-   colored role swatch, matching the reference design. */
+   colored role swatch, matching the reference design. Every file card starts
+   closed (regardless of size) so the tab opens as a scannable list — the
+   finding dot on each closed card is what you scroll to look for, not an
+   auto-expanded diff. */
 "use client";
 
 import React from "react";
@@ -119,7 +122,11 @@ export function SmartDiffView({
                       file={file}
                       commenting={commenting}
                       findingsApi={findingsApi}
-                      initialOpen={COLLAPSED_BY_DEFAULT.has(group.role) ? false : undefined}
+                      // Every file starts closed here — Smart order is meant to
+                      // be scanned closed (role, count, finding dots) before
+                      // opening anything, unlike the flat Original order view
+                      // where FileCard's own auto-expand-if-small rule applies.
+                      initialOpen={false}
                     />
                   ))
                 )}
