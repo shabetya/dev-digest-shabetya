@@ -15,16 +15,23 @@ emits JS — its `build` is a type-check.
 
 ```mermaid
 flowchart LR
-  IN["inputs<br/>diff · system prompt · repo map"] --> PROMPT["assemblePrompt()<br/>prompt.ts"]
+  IN["inputs<br/>diff · system prompt · repo map · intent (optional)"] --> PROMPT["assemblePrompt()<br/>prompt.ts"]
   PROMPT --> WRAP["wrapUntrusted() + INJECTION_GUARD<br/>fence untrusted content vs prompt injection"]
   WRAP --> LLM["LLMProvider (injected)<br/>llm/openrouter.ts"]
   LLM --> STRUCT["structured output<br/>llm/structured.ts<br/>Zod → JSON Schema · parse-with-repair"]
   STRUCT --> GROUND["groundFindings()<br/>grounding.ts<br/>mechanical citation gate vs the diff"]
-  GROUND --> OUT["Review<br/>verdict · score · grounded findings"]
+  GROUND --> SCOPE["applyIntentScope() (optional)<br/>output/intent-scope.ts<br/>drops non-critical out-of-scope findings;<br/>collapses out-of-scope CRITICALs into one signal"]
+  SCOPE --> OUT["Review<br/>verdict · score · grounded findings"]
 ```
 
 The grounding step is the mandatory gate: a finding that doesn't cite a real line
-in the diff is dropped, so the engine can't hallucinate locations. The score is
+in the diff is dropped, so the engine can't hallucinate locations. When an `Intent`
+was resolved upstream (by the server's Intent Layer — this package never computes
+one itself, only consumes it), a second, optional gate runs after grounding:
+`applyIntentScope()` drops findings the model flagged as out of the PR's stated
+scope, except CRITICAL ones, which are never silently dropped — all of them
+collapse into a single synthetic "N out-of-scope critical issue(s)" finding instead,
+so a real defect outside scope still surfaces exactly once. The score is
 recomputed deterministically from the **surviving** findings, not trusted from the
 model. `review/run.ts` orchestrates the run (single-pass by default).
 

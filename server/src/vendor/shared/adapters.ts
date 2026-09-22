@@ -286,3 +286,17 @@ export interface SecretsProvider {
    */
   set?(key: SecretKey, value: string): Promise<void>;
 }
+
+// ---------- LinkFetcher (Intent Layer — external plan/spec links) ----------
+export type LinkFetchResult = { ok: true; text: string } | { ok: false; reason: string };
+
+/**
+ * Fetch an arbitrary external URL (a plan/spec/ticket link found in a PR
+ * description or issue body) and return its plain text. NEVER throws — every
+ * failure (blocked scheme, private/loopback IP, timeout, oversized body) is
+ * reported as a typed `{ ok: false }` result so callers can treat "the link
+ * exists but is unreachable" as a normal, displayable outcome.
+ */
+export interface LinkFetcher {
+  fetch(url: string): Promise<LinkFetchResult>;
+}

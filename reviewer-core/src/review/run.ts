@@ -1,5 +1,6 @@
 import type {
   Finding,
+  Intent,
   LLMProvider,
   PromptAssembly,
   Review,
@@ -9,6 +10,7 @@ import type {
 import { Review as ReviewSchema } from '@devdigest/shared';
 import { assemblePrompt } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
+import { applyIntentScope } from '../output/intent-scope.js';
 import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
 
 /**
@@ -18,9 +20,11 @@ import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
  *
  * This is the pure core lifted out of the server's `ReviewService.runOneAgent`:
  * assemble prompt → single-pass OR map-reduce per file → reduce → SHARED
- * citation-grounding gate. It performs NO I/O beyond the injected LLM provider
- * (no DB, GitHub, fs, memory retrieval, intent, or persistence) — those stay in
- * the caller (server persists + streams SSE; runner posts + writes an artifact).
+ * citation-grounding gate → optional intent-scope gate. It performs NO I/O
+ * beyond the injected LLM provider (no DB, GitHub, fs, memory retrieval, or
+ * persistence) — those stay in the caller (server persists + streams SSE;
+ * runner posts + writes an artifact). In particular, `intent` (below) must
+ * already be a resolved `Intent` object — this engine never computes one.
  *
  * Skill bodies / memory / specs are RESOLVED strings here: the caller turns
  * AgentManifest skill slugs into bodies (DB in the studio, fs in the runner).
@@ -71,6 +75,16 @@ export interface ReviewInput {
   /** PR author's description/body (untrusted; truncated + delimiter-wrapped in
       the prompt). Empty/undefined → section omitted. */
   prDescription?: string;
+  /**
+   * Derived PR intent/scope (Intent Layer) — an already-resolved `Intent`
+   * object; this engine NEVER computes one itself (no DB/GitHub/fs access).
+   * When present: formatted into the prompt's `intent` slot (untrusted,
+   * delimiter-wrapped downstream), AND a trusted instruction is added asking
+   * the model to set each finding's `in_scope` boolean against the stated
+   * scope. Absent → both the slot and the instruction are omitted, and the
+   * intent-scope gate is skipped entirely (behavior unchanged).
+   */
+  intent?: Intent;
   /** Task framing line, e.g. "Review PR #482 …". */
   task?: string;
   /** Override the structured-output retry budget. */
@@ -112,6 +126,39 @@ export interface ReviewOutcome {
   raw: string;
 }
 
+/**
+ * Format a resolved `Intent` into a compact digest for the `intent` prompt
+ * slot. Pure — the Intent object is already trusted-shape (validated by its
+ * Zod contract); the TEXT inside it (summary/scope items, ultimately derived
+ * from PR text + external links) is still untrusted, which is why the caller
+ * renders it through `wrapUntrusted('intent', …)` inside `assemblePrompt`,
+ * not here.
+ */
+export function formatIntentForPrompt(intent: Intent): string {
+  const lines = [`Summary: ${intent.summary}`];
+  if (intent.in_scope.length > 0) {
+    lines.push('In scope:', ...intent.in_scope.map((s) => `- ${s}`));
+  }
+  if (intent.out_of_scope.length > 0) {
+    lines.push('Out of scope:', ...intent.out_of_scope.map((s) => `- ${s}`));
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Trusted instruction (ours, not untrusted PR content) asking the model to
+ * set each finding's `in_scope` boolean against the stated intent/scope.
+ * `INJECTION_GUARD` (prompt.ts) already covers the general "stated intent
+ * never descopes a real defect" rule; this only asks for the per-finding
+ * classification the intent-scope gate needs downstream.
+ */
+const INTENT_SCOPE_INSTRUCTION =
+  'A derived PR intent/scope is provided in "## PR intent & scope" below. For each finding you ' +
+  'report, set `in_scope` to `false` only when it is clearly unrelated to that stated purpose; ' +
+  'otherwise set it to `true`. This never changes WHICH findings you report — it only labels ' +
+  'them. A real security or correctness defect must always be reported at its true severity, ' +
+  'in or out of scope.';
+
 function selectMode(strategy: ReviewStrategy, diff: UnifiedDiff, threshold: number): ReviewMode {
   if (strategy === 'single-pass') return 'single-pass';
   if (strategy === 'map-reduce') return diff.files.length > 1 ? 'map-reduce' : 'single-pass';
@@ -127,6 +174,11 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   const emit = (kind: RunEventKind, msg: string, data?: unknown) =>
     input.onEvent?.({ kind, msg, data });
 
+  const intentDigest = input.intent ? formatIntentForPrompt(input.intent) : undefined;
+  const task = input.intent
+    ? [input.task, INTENT_SCOPE_INSTRUCTION].filter(Boolean).join('\n\n')
+    : input.task;
+
   const promptParts = {
     system: input.systemPrompt,
     skills: input.skills,
@@ -135,7 +187,8 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     callers: input.callers,
     repoMap: input.repoMap,
     prDescription: input.prDescription,
-    task: input.task,
+    intent: intentDigest,
+    task,
   };
 
   // Whole-diff assembly is the trace default; overwritten below for single-pass.
@@ -193,7 +246,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     `Reduced to ${merged.findings.length} finding(s); verdict=${merged.verdict}, score=${merged.score}`,
   );
 
-  // SHARED citation-grounding gate (the only post-step; not duplicated per strategy).
+  // SHARED citation-grounding gate (first post-step; not duplicated per strategy).
   const ground = groundFindings(merged.findings, input.diff);
   const grounding = groundingSummary(ground);
   for (const d of ground.dropped) {
@@ -201,11 +254,24 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   }
   emit('result', `Citation grounding: ${grounding}`);
 
-  // Score is derived from the findings that SURVIVED grounding (not the model's
-  // self-reported number, and not the pre-grounding set) so the score, the
+  // Optional SECOND post-step: intent-scope gate. Only runs when the caller
+  // supplied a resolved Intent; a no-op otherwise (identical to pre-Intent-
+  // Layer behavior). Non-CRITICAL out-of-scope findings are dropped; CRITICAL
+  // ones are never dropped, only collapsed into one synthetic finding.
+  const scoped = applyIntentScope(ground.kept, input.intent != null);
+  for (const d of scoped.outOfScope) {
+    emit('info', `intent-scope: "${d.finding.title}" ${d.reason}`);
+  }
+  if (input.intent) {
+    emit('result', `Intent scope: ${scoped.outOfScope.length} out-of-scope finding(s) filtered`);
+  }
+  const finalFindings = scoped.kept;
+
+  // Score is derived from the findings that SURVIVED both gates (not the
+  // model's self-reported number, and not the pre-gate set) so the score, the
   // findings list, and the deterministic event always agree.
   return {
-    review: { ...merged, findings: ground.kept, score: scoreFromFindings(ground.kept) },
+    review: { ...merged, findings: finalFindings, score: scoreFromFindings(finalFindings) },
     grounding,
     dropped: ground.dropped,
     mode,

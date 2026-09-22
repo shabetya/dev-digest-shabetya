@@ -6,6 +6,7 @@ import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
 import { NotFoundError } from '../../platform/errors.js';
 import { ReviewService } from './service.js';
+import { IntentService } from './intent-service.js';
 
 /**
  * reviews module.
@@ -14,12 +15,15 @@ import { ReviewService } from './service.js';
  *   GET    /runs/:id/trace                             → the single-document RunTrace
  *   GET    /pulls/:id/reviews                          → persisted reviews + findings for a PR
  *   POST   /findings/:id/(accept|dismiss)              → finding actions
+ *   GET    /pulls/:id/intent                           → persisted Intent Layer record (or null)
+ *   POST   /pulls/:id/intent/extract                   → recompute + persist Intent (Re-evaluate)
  */
 const FINDING_ACTIONS = ['accept', 'dismiss'] as const;
 export default async function reviewsRoutes(appBase: FastifyInstance) {
   const app = appBase.withTypeProvider<ZodTypeProvider>();
   const { container } = app;
   const service = new ReviewService(container);
+  const intentService = new IntentService(container);
 
   // ---- Run a review (manual trigger) -------------------------------
   // Tight per-route limit: each call can fan out to expensive LLM runs.
@@ -147,4 +151,24 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
       return result;
     });
   }
+
+  // ---- Intent Layer ---------------------------------------------------------
+  // Read-only — no LLM call.
+  app.get('/pulls/:id/intent', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return intentService.getIntent(workspaceId, req.params.id);
+  });
+
+  // Always recomputes (the PR page's "Re-evaluate" button). Tight per-route
+  // limit, same rationale as `/pulls/:id/review`: each call is an LLM call.
+  app.post(
+    '/pulls/:id/intent/extract',
+    { schema: { params: IdParams }, config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const { workspaceId } = await getContext(container, req);
+      const record = await intentService.extractIntent(workspaceId, req.params.id, req.log);
+      reply.status(201);
+      return record;
+    },
+  );
 }

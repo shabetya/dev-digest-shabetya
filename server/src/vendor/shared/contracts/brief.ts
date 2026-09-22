@@ -5,11 +5,34 @@ import { z } from 'zod';
  * Smart Diff. Composed into PrBrief.
  */
 
-// ---- Intent ----
+// ---- Intent (Intent Layer) ----
+/** Which indirect signals fed a computed Intent — names only, never content. */
+export const IntentSource = z.enum([
+  'pr_title',
+  'pr_description',
+  'linked_issue',
+  'plan_link',
+  'file_hunks',
+]);
+export type IntentSource = z.infer<typeof IntentSource>;
+
+export const PlanLinkStatus = z.enum(['not_linked', 'fetched', 'inaccessible']);
+export type PlanLinkStatus = z.infer<typeof PlanLinkStatus>;
+
 export const Intent = z.object({
-  intent: z.string(),
+  summary: z.string(),
   in_scope: z.array(z.string()),
   out_of_scope: z.array(z.string()),
+  /** 0-1 self-reported confidence; null when not yet assessed. */
+  confidence: z.number().min(0).max(1).nullable(),
+  /** Server-computed: true when `confidence` is below the low-confidence
+   *  threshold (never fabricated — null confidence is NOT low_confidence). */
+  low_confidence: z.boolean(),
+  /** Which indirect signals were available when this Intent was computed. */
+  sources: z.array(IntentSource),
+  /** First external plan/spec URL found in the PR description or issue body. */
+  plan_link_url: z.string().nullable(),
+  plan_link_status: PlanLinkStatus,
 });
 export type Intent = z.infer<typeof Intent>;
 

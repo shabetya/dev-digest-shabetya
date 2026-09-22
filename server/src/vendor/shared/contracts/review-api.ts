@@ -56,8 +56,15 @@ export const ReviewRunResponse = z.object({
 });
 export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
 
-/** Intent persisted for a PR (the Intent plus the pr_id it scopes). */
-export const PrIntentRecord = Intent.extend({ pr_id: z.string() });
+/** Intent persisted for a PR (the Intent plus the pr_id it scopes + computation metadata). */
+export const PrIntentRecord = Intent.extend({
+  pr_id: z.string(),
+  /** Provider/model that computed this Intent; null on legacy rows. */
+  model: z.string().nullable(),
+  /** The PR head SHA this Intent was computed against; null on legacy rows. */
+  computed_for_sha: z.string().nullable(),
+  computed_at: z.string(),
+});
 export type PrIntentRecord = z.infer<typeof PrIntentRecord>;
 
 /** Smart-diff response for a PR (the SmartDiff). */

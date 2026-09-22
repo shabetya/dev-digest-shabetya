@@ -52,8 +52,12 @@ export const FEATURE_MODELS: FeatureModelDef[] = [
     id: 'review_intent',
     label: 'PR Review · Intent',
     description: 'Derives a PR’s intent and scope before review.',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-4.1',
+    // Cheap classifier call by design (indirect signals, not the full diff).
+    // Other cheap OpenRouter alternatives worth trying here: google/gemini-2.5-flash-lite,
+    // openai/gpt-4o-mini, mistralai/ministral-8b-2512 — the Settings dropdown
+    // already lists live OpenRouter models, so no hardcoded list is needed here.
+    defaultProvider: 'openrouter',
+    defaultModel: 'deepseek/deepseek-v4-flash',
   },
   {
     id: 'risk_brief',

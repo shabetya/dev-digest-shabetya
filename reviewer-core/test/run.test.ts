@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { LLMProvider, StructuredResult } from '@devdigest/shared';
+import type { Intent, LLMProvider, StructuredResult } from '@devdigest/shared';
 import { MockLLMProvider, mockDiff } from './fixtures.js';
 import { reviewPullRequest } from '../src/index.js';
 
@@ -136,5 +136,72 @@ describe('reviewPullRequest (engine)', () => {
     await reviewPullRequest({ systemPrompt: 's', model: 'm', diff, llm: recorder, sessionId: 'sess-abc' });
     expect(seen.length).toBeGreaterThan(0);
     expect(seen.every((s) => s === 'sess-abc')).toBe(true);
+  });
+
+  describe('Intent Layer wiring', () => {
+    const intent: Intent = {
+      summary: 'Adds rate limiting to public endpoints',
+      in_scope: ['src/config.ts'],
+      out_of_scope: ['unrelated admin panel changes'],
+      confidence: 0.9,
+      low_confidence: false,
+      sources: ['pr_title', 'file_hunks'],
+      plan_link_url: null,
+      plan_link_status: 'not_linked',
+    };
+
+    it('omits the intent prompt slot and skips the scope gate when no intent is supplied', async () => {
+      const llm = new MockLLMProvider('openai', { structured: fixture });
+      const outcome = await reviewPullRequest({
+        systemPrompt: 's',
+        model: 'gpt-4.1',
+        diff: mockDiff(),
+        llm,
+        task: 'Review PR #482',
+      });
+      expect(outcome.assembly.intent ?? null).toBeNull();
+      expect(outcome.assembly.user).not.toContain('## PR intent & scope');
+    });
+
+    it('renders the intent slot + instruction, and a CRITICAL out-of-scope finding is collapsed, not dropped', async () => {
+      const withScope = {
+        verdict: 'request_changes',
+        summary: 'out-of-scope critical present',
+        score: 20,
+        findings: [
+          {
+            id: 'f1',
+            severity: 'CRITICAL',
+            category: 'security',
+            title: 'Hardcoded Stripe secret key',
+            file: 'src/config.ts',
+            start_line: 11,
+            end_line: 11,
+            rationale: 'sk_live in diff',
+            confidence: 0.98,
+            kind: 'finding',
+            in_scope: false,
+          },
+        ],
+      };
+      const llm = new MockLLMProvider('openai', { structured: withScope });
+      const events: string[] = [];
+      const outcome = await reviewPullRequest({
+        systemPrompt: 's',
+        model: 'gpt-4.1',
+        diff: mockDiff(),
+        llm,
+        task: 'Review PR #482',
+        intent,
+        onEvent: (e) => events.push(e.msg),
+      });
+
+      expect(outcome.assembly.intent).toContain('Adds rate limiting');
+      expect(outcome.assembly.user).toContain('## PR intent & scope');
+      // Grounded AND collapsed: exactly one CRITICAL finding survives, never silently dropped.
+      expect(outcome.review.findings).toHaveLength(1);
+      expect(outcome.review.findings[0]!.title).toMatch(/out-of-scope critical/);
+      expect(events.some((m) => m.includes('Intent scope'))).toBe(true);
+    });
   });
 });

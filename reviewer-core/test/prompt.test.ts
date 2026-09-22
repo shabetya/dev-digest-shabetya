@@ -64,3 +64,29 @@ describe('assemblePrompt — ## PR description', () => {
     expect((assembly.pr_description as string).length).toBe(4000);
   });
 });
+
+describe('assemblePrompt — ## PR intent & scope (Intent Layer)', () => {
+  it('renders the section (untrusted-wrapped) before the repo-map/diff sections when present', () => {
+    const { messages, assembly } = assemblePrompt({
+      system: 'sys',
+      diff: 'DIFF',
+      intent: 'Summary: adds rate limiting.',
+      repoMap: 'REPO MAP',
+    });
+    const user = messages[1]!.content;
+    expect(user).toContain('## PR intent & scope');
+    expect(user).toContain('<untrusted source="intent">');
+    expect(user).toContain('Summary: adds rate limiting.');
+    expect(user.indexOf('## PR intent & scope')).toBeLessThan(user.indexOf('## Repo skeleton'));
+    expect(user.indexOf('## PR intent & scope')).toBeLessThan(user.indexOf('## Diff to review'));
+    expect(assembly.intent).toBe('Summary: adds rate limiting.');
+  });
+
+  it('omits the section when intent is undefined or blank — no behaviour change', () => {
+    expect(userOf({ system: 'sys', diff: 'DIFF' })).not.toContain('## PR intent & scope');
+    expect(assemblePrompt({ system: 'sys', diff: 'DIFF' }).assembly.intent ?? null).toBeNull();
+    expect(userOf({ system: 'sys', diff: 'DIFF', intent: '   ' })).not.toContain(
+      '## PR intent & scope',
+    );
+  });
+});
