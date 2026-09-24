@@ -66,6 +66,15 @@ export interface PromptParts {
    * undefined → section omitted.
    */
   prDescription?: string;
+  /**
+   * Derived PR intent/scope (the Intent Layer) — a short, server-formatted
+   * digest of the PR's stated purpose and in/out-of-scope areas. Untrusted
+   * (ultimately derived from PR text + external links) — delimiter-wrapped.
+   * Rendered after `prDescription` and before the repo-map/diff sections.
+   * Empty/undefined → section omitted (no behavior change), same contract as
+   * every other optional slot.
+   */
+  intent?: string;
   /** The unified diff / user task (untrusted content). */
   diff: string;
   /** Optional task framing line, e.g. "Review PR #482 '…'". */
@@ -108,6 +117,9 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
   }
   if (skillsBlock) userSections.push(`## Skills / rules\n${skillsBlock}`);
   if (memoryBlock) userSections.push(`## Relevant memory\n${memoryBlock}`);
+  if (parts.intent && parts.intent.trim().length > 0) {
+    userSections.push(`## PR intent & scope\n${wrapUntrusted('intent', parts.intent)}`);
+  }
   if (parts.repoMap && parts.repoMap.trim().length > 0) {
     userSections.push(`## Repo skeleton\n${wrapUntrusted('repo-map', parts.repoMap)}`);
   }
@@ -134,6 +146,7 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
     callers: parts.callers ?? null,
     repo_map: parts.repoMap ?? null,
     pr_description: prDescription ?? null,
+    intent: parts.intent ?? null,
     user,
   };
 

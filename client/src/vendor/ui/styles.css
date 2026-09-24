@@ -37,6 +37,10 @@
   --failed: #ef4444;
   --stale: #6b7280;
 
+  /* Smart Diff role swatch — the one role with no existing semantic color
+     (core/tests/wiring/boilerplate reuse accent/ok/warn/info). */
+  --role-docs: #a855f7;
+
   --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.6);
   --shadow-drawer: -8px 0 32px rgba(0, 0, 0, 0.45);
   --code-add: rgba(16, 185, 129, 0.1);
@@ -72,6 +76,8 @@
 
   --ok: #059669;
   --ok-bg: rgba(5, 150, 105, 0.08);
+
+  --role-docs: #9333ea;
   --pending: #d97706;
   --failed: #dc2626;
   --stale: #9ca3af;

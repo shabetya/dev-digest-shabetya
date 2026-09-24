@@ -119,6 +119,20 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
         git: new MockGitClient({ diff: DIFF }),
         llm: {
           [provider]: new MockLLMProvider(provider, { structured }),
+          // ReviewRunExecutor's pre-work always attempts Intent Layer
+          // derivation (review_intent's registry default provider is
+          // 'openrouter') — mock it too so a real API key configured on the
+          // machine running these tests is never hit.
+          openrouter: new MockLLMProvider('openai', {
+            structuredBySchema: {
+              IntentClassification: {
+                summary: 'test intent',
+                in_scope: [],
+                out_of_scope: [],
+                confidence: 0.5,
+              },
+            },
+          }),
         },
       },
     });

@@ -31,6 +31,8 @@ import type {
   AuthWorkspace,
   SecretsProvider,
   SecretKey,
+  LinkFetcher,
+  LinkFetchResult,
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from './git/diff-parser.js';
 
@@ -326,5 +328,13 @@ export class MockSecretsProvider implements SecretsProvider {
   constructor(private secrets: Partial<Record<string, string>> = {}) {}
   async get(key: SecretKey): Promise<string | undefined> {
     return this.secrets[key as string];
+  }
+}
+
+// ---------- Mock LinkFetcher (Intent Layer) ----------
+export class MockLinkFetcher implements LinkFetcher {
+  constructor(private result: LinkFetchResult = { ok: true, text: 'mock plan text' }) {}
+  async fetch(_url: string): Promise<LinkFetchResult> {
+    return this.result;
   }
 }

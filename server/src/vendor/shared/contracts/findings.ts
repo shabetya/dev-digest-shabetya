@@ -94,6 +94,13 @@ export const FindingShape = z.object({
   // Lethal-trifecta variant fields (present only when kind === 'lethal_trifecta')
   trifecta_components: z.array(TrifectaComponent).nullish(),
   evidence: z.array(TrifectaEvidence).nullish(),
+  /**
+   * Intent-scope verdict (Intent Layer): true/false when the reviewing agent
+   * was given a PR intent and judged this finding in/out of its stated scope;
+   * null/absent when no intent was available. `null` must be treated as
+   * in-scope everywhere it's consumed — it means "no opinion", never "out".
+   */
+  in_scope: z.boolean().nullish(),
 });
 
 // Enforces the lethal-trifecta invariant without reshaping the schema into a

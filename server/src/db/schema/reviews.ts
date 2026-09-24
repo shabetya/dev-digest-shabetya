@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, uuid, text, integer, jsonb, timestamp, doublePrecision, index, check } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, jsonb, timestamp, doublePrecision, boolean, index, check } from 'drizzle-orm/pg-core';
 import { now } from './_shared';
 import { workspaces } from './core';
 import { pullRequests } from './pulls';
@@ -66,6 +66,13 @@ export const findings = pgTable(
     trifectaComponents: jsonb('trifecta_components').$type<string[]>(),
     acceptedAt: timestamp('accepted_at', { withTimezone: true }),
     dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
+    /**
+     * Intent-scope verdict (Intent Layer): true/false when the reviewing agent
+     * judged this finding against a supplied PR intent; null when no intent
+     * was available (pre-Intent-Layer rows, or intent computation failed).
+     * `null` MUST read as "in scope" everywhere it's consumed.
+     */
+    inScope: boolean('in_scope'),
   },
   (t) => ({
     reviewIdx: index('findings_review_idx').on(t.reviewId),
@@ -84,14 +91,45 @@ export const findings = pgTable(
   }),
 );
 
-export const prIntent = pgTable('pr_intent', {
-  prId: uuid('pr_id')
-    .primaryKey()
-    .references(() => pullRequests.id, { onDelete: 'cascade' }),
-  intent: text('intent').notNull(),
-  inScope: jsonb('in_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-  outOfScope: jsonb('out_of_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-});
+export const prIntent = pgTable(
+  'pr_intent',
+  {
+    prId: uuid('pr_id')
+      .primaryKey()
+      .references(() => pullRequests.id, { onDelete: 'cascade' }),
+    summary: text('summary').notNull(),
+    inScope: jsonb('in_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    outOfScope: jsonb('out_of_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** 0-1 self-reported confidence; nullable so pre-Intent-Layer rows (and any
+     *  row computed before a confidence was assessed) stay valid without a
+     *  fabricated value. */
+    confidence: doublePrecision('confidence'),
+    /** Which indirect signals were available when this Intent was computed. */
+    sources: jsonb('sources').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    planLinkUrl: text('plan_link_url'),
+    planLinkStatus: text('plan_link_status', {
+      enum: ['not_linked', 'fetched', 'inaccessible'],
+    })
+      .notNull()
+      .default('not_linked'),
+    /** Provider/model that computed this Intent; null on legacy rows. */
+    model: text('model'),
+    /** The PR head SHA this Intent was computed against; null on legacy rows
+     *  (also used to detect a stale Intent when the head moves). */
+    computedForSha: text('computed_for_sha'),
+    computedAt: timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    confidenceCk: check(
+      'pr_intent_confidence_ck',
+      sql`${t.confidence} is null or (${t.confidence} between 0 and 1)`,
+    ),
+    planLinkStatusCk: check(
+      'pr_intent_plan_link_status_ck',
+      sql`${t.planLinkStatus} in ('not_linked', 'fetched', 'inaccessible')`,
+    ),
+  }),
+);
 
 export const prBrief = pgTable('pr_brief', {
   prId: uuid('pr_id')

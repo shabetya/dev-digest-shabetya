@@ -26,6 +26,13 @@ const EnvSchema = z.object({
   // Note: even when on, sections only populate once the repo is indexed; an
   // unindexed repo degrades gracefully. Per-agent override: agents.repo_intel.
   REPO_INTEL_ENABLED: z.string().optional(),
+  // Intent Layer — an extra LLM call (`review_intent`, default OpenRouter)
+  // that runs automatically on every review run when no fresh intent is
+  // cached. Default ON, but this is a genuine per-review cost, unlike the
+  // other flags above — set INTENT_ENABLED=false to fully disable BOTH the
+  // automatic pre-work call and the explicit "Re-evaluate" endpoint, e.g. for
+  // a workspace that wants zero extra spend from a configured OPENROUTER_API_KEY.
+  INTENT_ENABLED: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
@@ -59,6 +66,12 @@ export type AppConfig = {
    * EXACTLY like the ripgrep-only baseline.
    */
   repoIntelEnabled: boolean;
+  /**
+   * Whether the Intent Layer (an extra `review_intent` LLM call per PR) is
+   * active. Default ON — set INTENT_ENABLED=false to opt out entirely (no
+   * automatic pre-work call, and the explicit re-evaluate endpoint refuses).
+   */
+  intentEnabled: boolean;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -77,5 +90,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     webOrigin: `http://localhost:${parsed.WEB_PORT}`,
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
+    intentEnabled: parsed.INTENT_ENABLED !== 'false',
   };
 }

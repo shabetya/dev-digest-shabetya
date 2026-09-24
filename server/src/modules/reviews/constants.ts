@@ -10,3 +10,12 @@
  * model's context.
  */
 export const REVIEW_STRATEGY = 'single-pass' as const;
+
+/**
+ * Intent Layer. Confidence below this threshold is surfaced to the UI as
+ * "low confidence" (`PrIntentRecord.low_confidence`) — a fixed cutoff rather
+ * than something the LLM decides for itself, so the signal is comparable
+ * across runs/models.
+ */
+export const INTENT_LOW_CONFIDENCE_THRESHOLD = 0.5;
+

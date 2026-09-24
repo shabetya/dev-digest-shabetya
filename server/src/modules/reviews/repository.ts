@@ -1,6 +1,6 @@
 import type { Db, Tx } from '../../db/client.js';
 import * as t from '../../db/schema.js';
-import type { Finding, Intent, RunSummary, RunTrace, Verdict } from '@devdigest/shared';
+import type { Finding, PrIntentRecord, RunSummary, RunTrace, Verdict } from '@devdigest/shared';
 
 /**
  * A2 — review data-access. The ONLY layer touching the DB for the review
@@ -21,6 +21,7 @@ export type ReviewRow = typeof t.reviews.$inferSelect;
 import * as reviewRepo from './repository/review.repo.js';
 import * as runRepo from './repository/run.repo.js';
 import * as pullRepo from './repository/pull.repo.js';
+export type { IntentUpsert } from './repository/pull.repo.js';
 
 export class ReviewRepository {
   constructor(private db: Db) {}
@@ -132,13 +133,13 @@ export class ReviewRepository {
     return reviewRepo.setFindingDismissed(this.db, findingId, at);
   }
 
-  // ---- intent -------------------------------------------------------------
+  // ---- intent (Intent Layer) ----------------------------------------------
 
-  upsertIntent(prId: string, intent: Intent): Promise<void> {
+  upsertIntent(prId: string, intent: pullRepo.IntentUpsert): Promise<void> {
     return pullRepo.upsertIntent(this.db, prId, intent);
   }
 
-  getIntent(prId: string): Promise<Intent | undefined> {
+  getIntent(prId: string): Promise<PrIntentRecord | undefined> {
     return pullRepo.getIntent(this.db, prId);
   }
 
