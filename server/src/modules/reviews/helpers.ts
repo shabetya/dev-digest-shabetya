@@ -54,6 +54,9 @@ export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
     confidence: row.confidence,
     kind: FindingKind.parse(row.kind),
     trifecta_components: (row.trifectaComponents as Finding['trifecta_components']) ?? null,
+    // `evidence` has no column on the findings table (only `trifectaComponents`
+    // is persisted) — it's always null once a finding is reconstructed from a
+    // stored row, never a lossy mapping bug.
     evidence: null,
     in_scope: row.inScope ?? null,
     review_id: row.reviewId,
