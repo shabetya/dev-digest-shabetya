@@ -16,6 +16,15 @@
   "noDownstream": "{count} changed symbol(s), no downstream callers found.",
   "graph": {
     "empty": "No downstream callers to graph.",
-    "ariaLabel": "Blast radius graph"
+    "ariaLabel": "Blast radius graph",
+    "legend": {
+      "symbol": "changed symbol",
+      "callers": "callers",
+      "endpoints": "endpoints affected",
+      "crons": "cron jobs affected"
+    }
+  },
+  "priorPrs": {
+    "title": "Prior PRs touching these files"
   }
 }

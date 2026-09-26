@@ -73,6 +73,7 @@ export function PrDetailView({ repoId, number }: { repoId: string; number: strin
           <OverviewTab
             prBody={pr.body}
             prId={page.prId}
+            repoId={repoId}
             repoFullName={page.repoFullName}
             headSha={pr.head_sha}
           />

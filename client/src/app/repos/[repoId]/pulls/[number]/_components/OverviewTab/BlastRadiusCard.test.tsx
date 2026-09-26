@@ -22,7 +22,7 @@ afterEach(() => {
 function renderCard() {
   return render(
     <NextIntlClientProvider locale="en" messages={{ blast: blastMessages }}>
-      <BlastRadiusCard prId="pr-1" repoFullName="acme/payments-api" headSha="a1b2c3d4" />
+      <BlastRadiusCard prId="pr-1" repoId="repo-1" repoFullName="acme/payments-api" headSha="a1b2c3d4" />
     </NextIntlClientProvider>,
   );
 }
@@ -41,6 +41,7 @@ function response(overrides: Partial<BlastRadiusResponse> = {}): BlastRadiusResp
     summary: "1 changed symbol(s), 1 caller(s), 1 endpoint(s)/0 cron(s) affected.",
     degraded: false,
     degraded_reason: null,
+    prior_prs: [],
     ...overrides,
   };
 }
@@ -55,7 +56,7 @@ describe("BlastRadiusCard", () => {
     blastData = response();
     rerender(
       <NextIntlClientProvider locale="en" messages={{ blast: blastMessages }}>
-        <BlastRadiusCard prId="pr-1" repoFullName="acme/payments-api" headSha="a1b2c3d4" />
+        <BlastRadiusCard prId="pr-1" repoId="repo-1" repoFullName="acme/payments-api" headSha="a1b2c3d4" />
       </NextIntlClientProvider>,
     );
 
@@ -97,5 +98,48 @@ describe("BlastRadiusCard", () => {
 
     expect(screen.getByText(/no downstream callers found/i)).toBeInTheDocument();
     expect(screen.queryByText("unusedHelper")).not.toBeInTheDocument();
+  });
+
+  it("switches between the Tree and Graph views via the segmented toggle", () => {
+    blastData = response();
+    renderCard();
+
+    // Tree view by default: both the overall stat and the per-group
+    // caller-count badge read "1 callers"; only the latter is tree-only.
+    expect(screen.getAllByText("1 callers")).toHaveLength(2);
+    expect(screen.queryByRole("img", { name: "Blast radius graph" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "graph" }));
+
+    expect(screen.getByRole("img", { name: "Blast radius graph" })).toBeInTheDocument();
+    expect(screen.getAllByText("1 callers")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("tab", { name: "tree" }));
+    expect(screen.getAllByText("1 callers")).toHaveLength(2);
+  });
+
+  it("expands the Prior PRs section to reveal a linked entry, and renders no third line when takeaway is null", () => {
+    blastData = response({
+      prior_prs: [
+        {
+          number: 42,
+          title: "Rework auth",
+          author: "marisa.koch",
+          date: "2026-01-01T00:00:00.000Z",
+          takeaway: "Tightened session expiry.",
+        },
+        { number: 7, title: "Fix login race", author: "aiko.tanaka", date: null, takeaway: null },
+      ],
+    });
+    renderCard();
+
+    fireEvent.click(screen.getByText("Prior PRs touching these files"));
+
+    const link = screen.getByRole("link", { name: /#42 rework auth/i });
+    expect(link).toHaveAttribute("href", "/repos/repo-1/pulls/42");
+    expect(screen.getByText("Tightened session expiry.")).toBeInTheDocument();
+
+    expect(screen.getByRole("link", { name: /#7 fix login race/i })).toBeInTheDocument();
+    expect(screen.queryByText(/no summary/i)).not.toBeInTheDocument();
   });
 });

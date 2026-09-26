@@ -1,4 +1,10 @@
-import type { BlastCaller, BlastRadiusResponse, ChangedSymbol, DownstreamImpact } from '@devdigest/shared';
+import type {
+  BlastCaller,
+  BlastRadiusResponse,
+  ChangedSymbol,
+  DownstreamImpact,
+  PriorPr,
+} from '@devdigest/shared';
 import type { BlastCallerRow, BlastResult } from '../repo-intel/types.js';
 
 /**
@@ -28,7 +34,7 @@ function endpointsAndCronsForFiles(
   return { endpoints: [...endpoints].sort(), crons: [...crons].sort() };
 }
 
-export function mapBlastResult(result: BlastResult): BlastRadiusResponse {
+export function mapBlastResult(result: BlastResult, priorPrs: PriorPr[]): BlastRadiusResponse {
   const changed_symbols: ChangedSymbol[] = result.changedSymbols.map((s) => ({
     name: s.name,
     file: s.file,
@@ -84,5 +90,6 @@ export function mapBlastResult(result: BlastResult): BlastRadiusResponse {
     summary,
     degraded: !!result.degraded,
     degraded_reason: result.reason ?? null,
+    prior_prs: priorPrs,
   };
 }

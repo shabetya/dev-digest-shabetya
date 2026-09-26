@@ -11,6 +11,7 @@ import { loadConfig } from '../src/platform/config.js';
 import { seed } from '../src/db/seed.js';
 import * as t from '../src/db/schema.js';
 import type { BlastRadiusResponse } from '@devdigest/shared';
+import { PRIOR_PRS_LIMIT } from '../src/modules/blast/constants.js';
 import type {
   RepoIntel,
   IndexResult,
@@ -252,6 +253,145 @@ d('GET /pulls/:id/blast (Testcontainers pg)', () => {
     expect(bySymbol.unusedHelper!.crons_affected).toEqual([]);
 
     expect(body.summary).toBe('3 changed symbol(s), 3 caller(s), 2 endpoint(s)/1 cron(s) affected.');
+
+    await app.close();
+  });
+
+  /** Insert a second PR in `repoId`, optionally sharing `path` via a `pr_files`
+   *  row, and optionally with a completed (`kind='review'`) review. */
+  async function seedPriorPr(opts: {
+    repoId: string;
+    number: number;
+    updatedAt: Date | null;
+    path?: string;
+    reviewSummary?: string;
+  }) {
+    const [priorPr] = await pg.handle.db
+      .insert(t.pullRequests)
+      .values({
+        workspaceId,
+        repoId: opts.repoId,
+        number: opts.number,
+        title: `Prior PR ${opts.number}`,
+        author: 'aiko.tanaka',
+        branch: `feat/prior-${opts.number}`,
+        base: 'main',
+        headSha: 'deadbeef',
+        additions: 1,
+        deletions: 1,
+        filesCount: 1,
+        status: 'reviewed',
+        updatedAt: opts.updatedAt,
+      })
+      .returning();
+    if (opts.path) {
+      await pg.handle.db.insert(t.prFiles).values({ prId: priorPr!.id, path: opts.path });
+    }
+    if (opts.reviewSummary !== undefined) {
+      await pg.handle.db.insert(t.reviews).values({
+        workspaceId,
+        prId: priorPr!.id,
+        agentId: null,
+        runId: null,
+        kind: 'review',
+        verdict: 'approve',
+        summary: opts.reviewSummary,
+        score: 90,
+        model: 'test-model',
+      });
+    }
+    return priorPr!;
+  }
+
+  it('surfaces prior PRs touching the same files, with a takeaway only when a completed review exists, excluding the current PR and non-overlapping PRs', async () => {
+    const app = await makeApp(
+      new StubRepoIntel({ changedSymbols: [], callers: [], impactedEndpoints: [] }),
+    );
+    const { repo, pr } = await setupRepoAndPr();
+    await pg.handle.db.insert(t.prFiles).values({ prId: pr.id, path: 'src/service.ts' });
+
+    const reviewed = await seedPriorPr({
+      repoId: repo.id,
+      number: 501,
+      updatedAt: new Date('2026-01-05T00:00:00Z'),
+      path: 'src/service.ts',
+      reviewSummary: 'Tightened session expiry.',
+    });
+    const unreviewed = await seedPriorPr({
+      repoId: repo.id,
+      number: 502,
+      updatedAt: new Date('2026-01-04T00:00:00Z'),
+      path: 'src/service.ts',
+    });
+    // Shares the repo but not a file — must be excluded.
+    await seedPriorPr({
+      repoId: repo.id,
+      number: 503,
+      updatedAt: new Date('2026-01-06T00:00:00Z'),
+      path: 'src/unrelated.ts',
+    });
+
+    const res = await app.inject({ method: 'GET', url: `/pulls/${pr.id}/blast` });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as BlastRadiusResponse;
+
+    // Newest-first; the current PR and the non-overlapping PR are excluded.
+    expect(body.prior_prs).toEqual([
+      {
+        number: reviewed.number,
+        title: reviewed.title,
+        author: reviewed.author,
+        date: reviewed.updatedAt!.toISOString(),
+        takeaway: 'Tightened session expiry.',
+      },
+      {
+        number: unreviewed.number,
+        title: unreviewed.title,
+        author: unreviewed.author,
+        date: unreviewed.updatedAt!.toISOString(),
+        takeaway: null,
+      },
+    ]);
+
+    await app.close();
+  });
+
+  it(`caps prior PRs at PRIOR_PRS_LIMIT (${PRIOR_PRS_LIMIT}) and sorts a null updated_at (pre-sync seed data) last without crashing or misordering`, async () => {
+    const app = await makeApp(
+      new StubRepoIntel({ changedSymbols: [], callers: [], impactedEndpoints: [] }),
+    );
+    const { repo, pr } = await setupRepoAndPr();
+    await pg.handle.db.insert(t.prFiles).values({ prId: pr.id, path: 'src/service.ts' });
+
+    const newest = await seedPriorPr({
+      repoId: repo.id,
+      number: 601,
+      updatedAt: new Date('2026-02-04T00:00:00Z'),
+      path: 'src/service.ts',
+    });
+    const middle = await seedPriorPr({
+      repoId: repo.id,
+      number: 602,
+      updatedAt: new Date('2026-02-03T00:00:00Z'),
+      path: 'src/service.ts',
+    });
+    const oldest = await seedPriorPr({
+      repoId: repo.id,
+      number: 603,
+      updatedAt: new Date('2026-02-02T00:00:00Z'),
+      path: 'src/service.ts',
+    });
+    // Pre-sync seed data with no `updated_at` — must sort after every dated
+    // row (NULLS LAST) and, being the 4th match against a limit of 3, must be
+    // the one dropped by the cap.
+    await seedPriorPr({ repoId: repo.id, number: 604, updatedAt: null, path: 'src/service.ts' });
+
+    const res = await app.inject({ method: 'GET', url: `/pulls/${pr.id}/blast` });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as BlastRadiusResponse;
+
+    expect(body.prior_prs).toHaveLength(PRIOR_PRS_LIMIT);
+    expect(body.prior_prs.map((p) => p.number)).toEqual([newest.number, middle.number, oldest.number]);
 
     await app.close();
   });

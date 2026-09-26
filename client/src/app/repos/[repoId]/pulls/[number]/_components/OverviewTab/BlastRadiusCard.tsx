@@ -5,27 +5,73 @@ import { useTranslations } from "next-intl";
 import { SectionLabel, Badge, Icon, MonoLink } from "@devdigest/ui";
 import { useBlastRadius } from "@/lib/hooks/blast";
 import { githubBlobUrl } from "@/lib/github-urls";
+import { BlastRadiusGraph } from "./BlastRadiusGraph";
+import { PriorPrsSection } from "./PriorPrsSection";
 import { s } from "./styles";
+
+type BlastView = "tree" | "graph";
+
+/** Two bordered buttons, active one highlighted — no existing `@devdigest/ui`
+ *  primitive fits this exact segmented-control shape, so it's a small local
+ *  one (single consumer: `BlastRadiusCard`). `role="tablist"`/`role="tab"`
+ *  since these are two plain buttons standing in for a native widget. */
+function ViewToggle({
+  view,
+  onChange,
+  treeLabel,
+  graphLabel,
+}: {
+  view: BlastView;
+  onChange: (view: BlastView) => void;
+  treeLabel: string;
+  graphLabel: string;
+}) {
+  return (
+    <div role="tablist" aria-label="Blast radius view" style={s.viewToggle}>
+      {(
+        [
+          ["tree", treeLabel],
+          ["graph", graphLabel],
+        ] as const
+      ).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="tab"
+          aria-selected={view === value}
+          style={{ ...s.viewToggleButton, ...(view === value ? s.viewToggleButtonActive : undefined) }}
+          onClick={() => onChange(value)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Blast Radius card — the PR's pre-calculated impact map (changed symbols,
- * their callers, and which HTTP endpoints/cron jobs depend on them). Purely
- * read-only presentation of `GET /pulls/:id/blast` — no LLM call, no fresh
- * analysis. Renders nothing before a `prId` is known or while loading
- * (mirrors IntentCard's convention).
+ * their callers, and which HTTP endpoints/cron jobs depend on them), plus
+ * prior PRs that touched the same files. Purely read-only presentation of
+ * `GET /pulls/:id/blast` — no LLM call, no fresh analysis. Renders nothing
+ * before a `prId` is known or while loading (mirrors IntentCard's
+ * convention).
  */
 export function BlastRadiusCard({
   prId,
+  repoId,
   repoFullName,
   headSha,
 }: {
   prId: string;
+  repoId: string;
   repoFullName?: string | null;
   headSha?: string | null;
 }) {
   const { data: blast, isLoading } = useBlastRadius(prId);
   const t = useTranslations("blast");
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({});
+  const [view, setView] = React.useState<BlastView>("tree");
 
   if (isLoading || !blast) return null;
 
@@ -56,22 +102,31 @@ export function BlastRadiusCard({
         )}
 
         <div style={s.blastStatsRow} data-testid="blast-stats">
-          <span>
-            {blast.changed_symbols.length} {t("stat.symbols")}
-          </span>
-          <span>
-            {totalCallers} {t("stat.callers")}
-          </span>
-          <span>
-            {allEndpoints.size} {t("stat.endpoints")}
-          </span>
-          <span>
-            {allCrons.size} {t("stat.crons")}
-          </span>
+          <div style={s.blastStatsGroup}>
+            <span style={s.blastStat}>
+              <Icon.Code size={13} />
+              {blast.changed_symbols.length} {t("stat.symbols")}
+            </span>
+            <span style={s.blastStat}>
+              <Icon.ArrowRight size={13} />
+              {totalCallers} {t("stat.callers")}
+            </span>
+            <span style={s.blastStat}>
+              <Icon.Globe size={13} />
+              {allEndpoints.size} {t("stat.endpoints")}
+            </span>
+            <span style={s.blastStat}>
+              <Icon.Clock size={13} />
+              {allCrons.size} {t("stat.crons")}
+            </span>
+          </div>
+          <ViewToggle view={view} onChange={setView} treeLabel={t("view.tree")} graphLabel={t("view.graph")} />
         </div>
 
         {noDownstream ? (
           <p style={s.blastEmpty}>{t("noDownstream", { count: blast.changed_symbols.length })}</p>
+        ) : view === "graph" ? (
+          <BlastRadiusGraph downstream={blast.downstream} />
         ) : (
           <div style={s.blastGroups}>
             {blast.downstream.map((group) => {
@@ -95,7 +150,10 @@ export function BlastRadiusCard({
                       size={13}
                       style={{ transform: isOpen ? "rotate(90deg)" : undefined }}
                     />
-                    <span style={s.blastGroupSymbol}>{group.symbol}</span>
+                    <span style={s.blastGroupSymbol}>
+                      <Icon.Code size={13} />
+                      {group.symbol}
+                    </span>
                     <span style={s.blastGroupCount}>
                       {t("callerCount", { count: group.callers.length })}
                     </span>
@@ -112,6 +170,7 @@ export function BlastRadiusCard({
                               : undefined;
                           return (
                             <div key={i} style={s.blastCallerRow}>
+                              <span style={s.blastCallerPrefix}>↳</span>
                               <MonoLink href={href}>
                                 {caller.file}:{caller.line}
                               </MonoLink>
@@ -122,12 +181,12 @@ export function BlastRadiusCard({
                       {(group.endpoints_affected.length > 0 || group.crons_affected.length > 0) && (
                         <div style={s.blastImpactRow}>
                           {group.endpoints_affected.map((endpoint) => (
-                            <Badge key={endpoint} mono>
+                            <Badge key={endpoint} mono color="var(--accent)" bg="var(--accent-bg)">
                               {endpoint}
                             </Badge>
                           ))}
                           {group.crons_affected.map((cron) => (
-                            <Badge key={cron} mono>
+                            <Badge key={cron} mono color="var(--warn)" bg="var(--warn-bg)">
                               {cron}
                             </Badge>
                           ))}
@@ -140,6 +199,8 @@ export function BlastRadiusCard({
             })}
           </div>
         )}
+
+        <PriorPrsSection priorPrs={blast.prior_prs} repoId={repoId} />
       </div>
     </section>
   );

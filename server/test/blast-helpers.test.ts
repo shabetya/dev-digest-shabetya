@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { mapBlastResult } from '../src/modules/blast/helpers.js';
 import type { BlastResult } from '../src/modules/repo-intel/types.js';
+import type { PriorPr } from '@devdigest/shared';
 
 describe('mapBlastResult', () => {
   it('groups callers by the changed symbol they reach, aggregates endpoints/crons per group from factsByFile, and includes a zero-caller symbol', () => {
@@ -30,7 +31,7 @@ describe('mapBlastResult', () => {
       degraded: false,
     };
 
-    const mapped = mapBlastResult(result);
+    const mapped = mapBlastResult(result, []);
 
     expect(mapped.degraded).toBe(false);
     expect(mapped.degraded_reason).toBeNull();
@@ -80,7 +81,7 @@ describe('mapBlastResult', () => {
       },
     };
 
-    const mapped = mapBlastResult(result);
+    const mapped = mapBlastResult(result, []);
     expect(mapped.downstream[0]!.endpoints_affected).toEqual(['POST /payments']);
   });
 
@@ -95,7 +96,7 @@ describe('mapBlastResult', () => {
       reason: 'flag_off',
     };
 
-    const mapped = mapBlastResult(result);
+    const mapped = mapBlastResult(result, []);
     expect(mapped.downstream[0]!.endpoints_affected).toEqual([]);
     expect(mapped.downstream[0]!.crons_affected).toEqual([]);
     expect(mapped.degraded).toBe(true);
@@ -121,7 +122,7 @@ describe('mapBlastResult', () => {
       impactedEndpoints: [],
     };
 
-    const mapped = mapBlastResult(result);
+    const mapped = mapBlastResult(result, []);
 
     expect(mapped.downstream).toHaveLength(2);
     // Both same-named symbols get the identical caller list — the caller of
@@ -133,13 +134,25 @@ describe('mapBlastResult', () => {
 
   it('passes through an empty, non-degraded result (no changed symbols)', () => {
     const result: BlastResult = { changedSymbols: [], callers: [], impactedEndpoints: [] };
-    const mapped = mapBlastResult(result);
+    const mapped = mapBlastResult(result, []);
     expect(mapped).toEqual({
       changed_symbols: [],
       downstream: [],
       summary: '0 changed symbol(s), 0 caller(s), 0 endpoint(s)/0 cron(s) affected.',
       degraded: false,
       degraded_reason: null,
+      prior_prs: [],
     });
+  });
+
+  it('passes `prior_prs` through unchanged — it is not derived from `BlastResult`', () => {
+    const result: BlastResult = { changedSymbols: [], callers: [], impactedEndpoints: [] };
+    const priorPrs: PriorPr[] = [
+      { number: 42, title: 'Rework auth', author: 'marisa.koch', date: '2026-01-01T00:00:00.000Z', takeaway: 'Tightened session expiry.' },
+      { number: 41, title: 'Fix login race', author: 'aiko.tanaka', date: null, takeaway: null },
+    ];
+
+    const mapped = mapBlastResult(result, priorPrs);
+    expect(mapped.prior_prs).toEqual(priorPrs);
   });
 });

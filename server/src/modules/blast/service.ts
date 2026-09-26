@@ -2,6 +2,7 @@ import type { Container } from '../../platform/container.js';
 import type { BlastRadiusResponse } from '@devdigest/shared';
 import { NotFoundError } from '../../platform/errors.js';
 import { mapBlastResult } from './helpers.js';
+import { PRIOR_PRS_LIMIT } from './constants.js';
 
 /**
  * Blast Radius — read-only, pre-calculated impact map (which symbols
@@ -22,9 +23,15 @@ export async function getBlast(
   if (!pull) throw new NotFoundError('Pull request not found');
 
   const files = await container.reviewRepo.getPrFiles(prId);
-  const result = await container.repoIntel.getBlastRadius(
-    pull.repoId,
-    files.map((f) => f.path),
-  );
-  return mapBlastResult(result);
+  const filePaths = files.map((f) => f.path);
+  const [result, priorPrs] = await Promise.all([
+    container.repoIntel.getBlastRadius(pull.repoId, filePaths),
+    container.reviewRepo.priorPrsTouchingFiles({
+      repoId: pull.repoId,
+      excludePrId: prId,
+      filePaths,
+      limit: PRIOR_PRS_LIMIT,
+    }),
+  ]);
+  return mapBlastResult(result, priorPrs);
 }

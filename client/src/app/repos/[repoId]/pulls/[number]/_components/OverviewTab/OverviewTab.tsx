@@ -9,11 +9,12 @@ import { s } from "./styles";
 interface OverviewTabProps {
   prBody: string | null | undefined;
   prId: string | null | undefined;
+  repoId: string;
   repoFullName?: string | null;
   headSha?: string | null;
 }
 
-export function OverviewTab({ prBody, prId, repoFullName, headSha }: OverviewTabProps) {
+export function OverviewTab({ prBody, prId, repoId, repoFullName, headSha }: OverviewTabProps) {
   return (
     <>
       {prBody && (
@@ -22,8 +23,12 @@ export function OverviewTab({ prBody, prId, repoFullName, headSha }: OverviewTab
           <div style={s.descriptionBox}>{prBody}</div>
         </section>
       )}
-      {prId && <IntentCard prId={prId} />}
-      {prId && <BlastRadiusCard prId={prId} repoFullName={repoFullName} headSha={headSha} />}
+      {prId && (
+        <div style={s.overviewGrid}>
+          <IntentCard prId={prId} />
+          <BlastRadiusCard prId={prId} repoId={repoId} repoFullName={repoFullName} headSha={headSha} />
+        </div>
+      )}
     </>
   );
 }
