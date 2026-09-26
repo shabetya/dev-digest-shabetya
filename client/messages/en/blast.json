@@ -5,6 +5,9 @@
     "endpoints": "endpoints",
     "crons": "cron/jobs"
   },
+  "degraded": {
+    "message": "Repo index incomplete — showing partial impact."
+  },
   "view": {
     "tree": "tree",
     "graph": "graph"

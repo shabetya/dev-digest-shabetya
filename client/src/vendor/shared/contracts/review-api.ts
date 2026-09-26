@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { FindingShape, checkTrifectaInvariant, Verdict } from './findings.js';
-import { Intent, SmartDiff } from './brief.js';
+import { BlastRadius, Intent, SmartDiff } from './brief.js';
 
 /**
  * A2 — Review-Core API surface contracts. These extend the core
@@ -70,3 +70,14 @@ export type PrIntentRecord = z.infer<typeof PrIntentRecord>;
 /** Smart-diff response for a PR (the SmartDiff). */
 export const SmartDiffResponse = SmartDiff;
 export type SmartDiffResponse = z.infer<typeof SmartDiffResponse>;
+
+/**
+ * Blast-radius response for a PR (the BlastRadius plus whether it was
+ * computed on the degraded/best-effort path — e.g. repo-intel disabled or
+ * not yet indexed — and, if so, why).
+ */
+export const BlastRadiusResponse = BlastRadius.extend({
+  degraded: z.boolean(),
+  degraded_reason: z.string().nullable(),
+});
+export type BlastRadiusResponse = z.infer<typeof BlastRadiusResponse>;

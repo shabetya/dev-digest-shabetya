@@ -3,14 +3,17 @@
 import React from "react";
 import { SectionLabel } from "@devdigest/ui";
 import { IntentCard } from "./IntentCard";
+import { BlastRadiusCard } from "./BlastRadiusCard";
 import { s } from "./styles";
 
 interface OverviewTabProps {
   prBody: string | null | undefined;
   prId: string | null | undefined;
+  repoFullName?: string | null;
+  headSha?: string | null;
 }
 
-export function OverviewTab({ prBody, prId }: OverviewTabProps) {
+export function OverviewTab({ prBody, prId, repoFullName, headSha }: OverviewTabProps) {
   return (
     <>
       {prBody && (
@@ -20,6 +23,7 @@ export function OverviewTab({ prBody, prId }: OverviewTabProps) {
         </section>
       )}
       {prId && <IntentCard prId={prId} />}
+      {prId && <BlastRadiusCard prId={prId} repoFullName={repoFullName} headSha={headSha} />}
     </>
   );
 }

@@ -51,4 +51,64 @@ export const s = {
   intentFooter: {
     marginTop: 14,
   } satisfies CSSProperties,
+  blastDegradedRow: {
+    marginBottom: 12,
+  } satisfies CSSProperties,
+  blastStatsRow: {
+    display: "flex",
+    gap: 16,
+    flexWrap: "wrap",
+    fontSize: 13,
+    color: "var(--text-secondary)",
+    marginBottom: 12,
+  } satisfies CSSProperties,
+  blastEmpty: {
+    margin: 0,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  blastGroups: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  } satisfies CSSProperties,
+  blastGroup: {
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+  } satisfies CSSProperties,
+  blastGroupHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  blastGroupSymbol: {
+    fontFamily: "var(--font-mono, monospace)",
+    fontWeight: 600,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  blastGroupCount: {
+    color: "var(--text-muted)",
+    fontSize: 12,
+  } satisfies CSSProperties,
+  blastGroupBody: {
+    borderTop: "1px solid var(--border)",
+    padding: "8px 12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  } satisfies CSSProperties,
+  blastGroupEmpty: {
+    color: "var(--text-muted)",
+    fontSize: 13,
+  } satisfies CSSProperties,
+  blastCallerRow: {
+    fontSize: 13,
+  } satisfies CSSProperties,
+  blastImpactRow: {
+    display: "flex",
+    gap: 6,
+    flexWrap: "wrap",
+    marginTop: 6,
+  } satisfies CSSProperties,
 } as const;

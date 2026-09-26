@@ -1,0 +1,88 @@
+import type { BlastCaller, BlastRadiusResponse, ChangedSymbol, DownstreamImpact } from '@devdigest/shared';
+import type { BlastCallerRow, BlastResult } from '../repo-intel/types.js';
+
+/**
+ * Blast Radius — pure mapping from the repo-intel facade's `BlastResult` to
+ * the wire contract (`BlastRadiusResponse`). No LLM call, no DB access: this
+ * is read-only presentation over data `getBlastRadius` already computed.
+ */
+
+/**
+ * Union endpoints/crons across a set of caller files, via `factsByFile`.
+ * `factsByFile` is absent on the degraded/ripgrep-only path — treat that as
+ * "no facts available" rather than throwing.
+ */
+function endpointsAndCronsForFiles(
+  files: string[],
+  factsByFile: BlastResult['factsByFile'],
+): { endpoints: string[]; crons: string[] } {
+  if (!factsByFile) return { endpoints: [], crons: [] };
+  const endpoints = new Set<string>();
+  const crons = new Set<string>();
+  for (const file of files) {
+    const facts = factsByFile[file];
+    if (!facts) continue;
+    for (const e of facts.endpoints) endpoints.add(e);
+    for (const c of facts.crons) crons.add(c);
+  }
+  return { endpoints: [...endpoints].sort(), crons: [...crons].sort() };
+}
+
+export function mapBlastResult(result: BlastResult): BlastRadiusResponse {
+  const changed_symbols: ChangedSymbol[] = result.changedSymbols.map((s) => ({
+    name: s.name,
+    file: s.file,
+    kind: s.kind,
+  }));
+
+  // Group callers by the changed symbol they reach (viaSymbol).
+  const callersBySymbol = new Map<string, BlastCallerRow[]>();
+  for (const caller of result.callers) {
+    const list = callersBySymbol.get(caller.viaSymbol) ?? [];
+    list.push(caller);
+    callersBySymbol.set(caller.viaSymbol, list);
+  }
+
+  // One downstream entry per changed symbol — INCLUDING those with zero
+  // callers (`callers: []`), so the "no downstream callers" UI state has
+  // real data to render rather than needing to infer absence.
+  const downstream: DownstreamImpact[] = changed_symbols.map((symbol) => {
+    const callerRows = callersBySymbol.get(symbol.name) ?? [];
+    const callers: BlastCaller[] = callerRows.map((row) => ({
+      name: row.symbol,
+      file: row.file,
+      line: row.line,
+    }));
+    const { endpoints, crons } = endpointsAndCronsForFiles(
+      callerRows.map((row) => row.file),
+      result.factsByFile,
+    );
+    return {
+      symbol: symbol.name,
+      callers,
+      endpoints_affected: endpoints,
+      crons_affected: crons,
+    };
+  });
+
+  // Global (deduped) endpoint/cron counts for the summary line only — a
+  // symbol-level group's own endpoints_affected/crons_affected stay
+  // per-group above.
+  const allEndpoints = new Set<string>();
+  const allCrons = new Set<string>();
+  for (const group of downstream) {
+    for (const e of group.endpoints_affected) allEndpoints.add(e);
+    for (const c of group.crons_affected) allCrons.add(c);
+  }
+
+  // Plain counts, no LLM call.
+  const summary = `${changed_symbols.length} changed symbol(s), ${result.callers.length} caller(s), ${allEndpoints.size} endpoint(s)/${allCrons.size} cron(s) affected.`;
+
+  return {
+    changed_symbols,
+    downstream,
+    summary,
+    degraded: !!result.degraded,
+    degraded_reason: result.reason ?? null,
+  };
+}
