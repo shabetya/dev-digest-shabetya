@@ -1,6 +1,12 @@
 import type { CSSProperties } from "react";
 
 export const s = {
+  overviewGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 20,
+    alignItems: "start",
+  } satisfies CSSProperties,
   descriptionBox: {
     border: "1px solid var(--border)",
     borderRadius: 8,
@@ -50,5 +56,156 @@ export const s = {
   } satisfies CSSProperties,
   intentFooter: {
     marginTop: 14,
+  } satisfies CSSProperties,
+  blastDegradedRow: {
+    marginBottom: 12,
+  } satisfies CSSProperties,
+  blastStatsRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    flexWrap: "wrap",
+    fontSize: 13,
+    color: "var(--text-secondary)",
+    marginBottom: 12,
+  } satisfies CSSProperties,
+  blastStatsGroup: {
+    display: "flex",
+    gap: 16,
+    flexWrap: "wrap",
+  } satisfies CSSProperties,
+  blastStat: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+  } satisfies CSSProperties,
+  viewToggle: {
+    display: "inline-flex",
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+    overflow: "hidden",
+  } satisfies CSSProperties,
+  viewToggleButton: {
+    border: "none",
+    background: "transparent",
+    color: "var(--text-secondary)",
+    fontSize: 12,
+    fontWeight: 600,
+    padding: "5px 12px",
+    cursor: "pointer",
+    textTransform: "capitalize",
+  } satisfies CSSProperties,
+  viewToggleButtonActive: {
+    background: "var(--accent-bg)",
+    color: "var(--accent-text)",
+  } satisfies CSSProperties,
+  blastEmpty: {
+    margin: 0,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  blastGroups: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  } satisfies CSSProperties,
+  blastGroup: {
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+  } satisfies CSSProperties,
+  blastGroupHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  blastGroupSymbol: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    fontFamily: "var(--font-mono, monospace)",
+    fontWeight: 600,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  blastGroupCount: {
+    color: "var(--text-muted)",
+    fontSize: 12,
+    marginLeft: "auto",
+  } satisfies CSSProperties,
+  blastGroupBody: {
+    borderTop: "1px solid var(--border)",
+    padding: "8px 12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  } satisfies CSSProperties,
+  blastGroupEmpty: {
+    color: "var(--text-muted)",
+    fontSize: 13,
+  } satisfies CSSProperties,
+  blastCallerRow: {
+    fontSize: 13,
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+  } satisfies CSSProperties,
+  blastCallerPrefix: {
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  blastImpactRow: {
+    display: "flex",
+    gap: 6,
+    flexWrap: "wrap",
+    marginTop: 6,
+  } satisfies CSSProperties,
+  priorPrsSection: {
+    marginTop: 16,
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+  } satisfies CSSProperties,
+  priorPrsHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  priorPrsTitle: {
+    color: "var(--text-primary)",
+    fontWeight: 600,
+    fontSize: 13,
+  } satisfies CSSProperties,
+  priorPrsCount: {
+    color: "var(--text-muted)",
+    fontSize: 12,
+    marginLeft: "auto",
+  } satisfies CSSProperties,
+  priorPrsBody: {
+    borderTop: "1px solid var(--border)",
+    padding: "8px 12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  } satisfies CSSProperties,
+  priorPrRow: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  } satisfies CSSProperties,
+  priorPrLink: {
+    fontSize: 13,
+    fontWeight: 500,
+    color: "var(--accent-text)",
+    textDecoration: "none",
+  } satisfies CSSProperties,
+  priorPrMeta: {
+    fontSize: 12,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  priorPrTakeaway: {
+    fontSize: 12,
+    color: "var(--text-muted)",
+    fontStyle: "italic",
   } satisfies CSSProperties,
 } as const;
