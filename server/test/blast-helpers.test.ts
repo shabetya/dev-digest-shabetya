@@ -145,7 +145,7 @@ describe('mapBlastResult', () => {
     });
   });
 
-  it('passes `prior_prs` through unchanged — it is not derived from `BlastResult`', () => {
+  it('passes `prior_prs` through unchanged when the takeaway is already a short, clean sentence', () => {
     const result: BlastResult = { changedSymbols: [], callers: [], impactedEndpoints: [] };
     const priorPrs: PriorPr[] = [
       { number: 42, title: 'Rework auth', author: 'marisa.koch', date: '2026-01-01T00:00:00.000Z', takeaway: 'Tightened session expiry.' },
@@ -154,5 +154,44 @@ describe('mapBlastResult', () => {
 
     const mapped = mapBlastResult(result, priorPrs);
     expect(mapped.prior_prs).toEqual(priorPrs);
+  });
+
+  it('sanitizes a prior PR takeaway: first sentence only, capped length, and nulls out an LLM-refusal-shaped summary', () => {
+    const result: BlastResult = { changedSymbols: [], callers: [], impactedEndpoints: [] };
+    const priorPrs: PriorPr[] = [
+      {
+        number: 10,
+        title: 'Long summary',
+        author: 'a',
+        date: null,
+        takeaway:
+          'This first sentence on its own already exceeds the cap we apply for the Prior PRs panel display line by quite a lot of characters. A second sentence follows that should never appear.',
+      },
+      {
+        number: 11,
+        title: 'Short summary',
+        author: 'b',
+        date: null,
+        takeaway: 'Reused the existing router. Also touched up the tests.',
+      },
+      {
+        number: 12,
+        title: 'Broken review run',
+        author: 'c',
+        date: null,
+        takeaway:
+          "I can't perform this review because the actual PR diff was not included in the message.",
+      },
+      { number: 13, title: 'No review yet', author: 'd', date: null, takeaway: null },
+    ];
+
+    const mapped = mapBlastResult(result, priorPrs);
+    const byNumber = Object.fromEntries(mapped.prior_prs.map((p) => [p.number, p.takeaway]));
+
+    expect(byNumber[10]).toMatch(/…$/);
+    expect(byNumber[10]!.length).toBeLessThanOrEqual(120);
+    expect(byNumber[11]).toBe('Reused the existing router.');
+    expect(byNumber[12]).toBeNull();
+    expect(byNumber[13]).toBeNull();
   });
 });

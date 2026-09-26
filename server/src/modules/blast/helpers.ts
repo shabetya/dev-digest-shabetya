@@ -34,6 +34,35 @@ function endpointsAndCronsForFiles(
   return { endpoints: [...endpoints].sort(), crons: [...crons].sort() };
 }
 
+const TAKEAWAY_MAX_CHARS = 120;
+
+// Best-effort filter for a stored review `summary` that's actually an LLM
+// refusal/error ("I can't perform this review because…") rather than a real
+// verdict — these happen when an earlier review run was itself degraded, and
+// showing them verbatim in the Prior PRs panel reads as a Blast Radius bug
+// even though the bad data predates this feature. Not exhaustive — just the
+// common lead-ins, so it degrades to "no takeaway" rather than misleading.
+const REFUSAL_LEAD_INS = [/^i can'?t\b/i, /^i cannot\b/i, /^i'?m unable\b/i, /^i am unable\b/i];
+
+/**
+ * `reviews.summary` is the whole PR's final review verdict, not a note about
+ * why that PR is relevant to *these* files — we don't have anything more
+ * targeted without a fresh LLM call, which Blast Radius deliberately never
+ * makes. This only trims it to something skimmable (first sentence, capped
+ * length) and drops it entirely when it looks like a stored review failure.
+ */
+function sanitizeTakeaway(summary: string | null): string | null {
+  if (!summary) return null;
+  const trimmed = summary.trim();
+  if (!trimmed) return null;
+  if (REFUSAL_LEAD_INS.some((re) => re.test(trimmed))) return null;
+
+  const sentenceEnd = trimmed.search(/[.!?](\s|$)/);
+  const firstSentence = sentenceEnd === -1 ? trimmed : trimmed.slice(0, sentenceEnd + 1);
+  if (firstSentence.length <= TAKEAWAY_MAX_CHARS) return firstSentence;
+  return `${firstSentence.slice(0, TAKEAWAY_MAX_CHARS - 1).trimEnd()}…`;
+}
+
 export function mapBlastResult(result: BlastResult, priorPrs: PriorPr[]): BlastRadiusResponse {
   const changed_symbols: ChangedSymbol[] = result.changedSymbols.map((s) => ({
     name: s.name,
@@ -90,6 +119,6 @@ export function mapBlastResult(result: BlastResult, priorPrs: PriorPr[]): BlastR
     summary,
     degraded: !!result.degraded,
     degraded_reason: result.reason ?? null,
-    prior_prs: priorPrs,
+    prior_prs: priorPrs.map((pr) => ({ ...pr, takeaway: sanitizeTakeaway(pr.takeaway) })),
   };
 }
