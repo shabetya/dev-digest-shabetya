@@ -21,6 +21,8 @@ export type ReviewRow = typeof t.reviews.$inferSelect;
 import * as reviewRepo from './repository/review.repo.js';
 import * as runRepo from './repository/run.repo.js';
 import * as pullRepo from './repository/pull.repo.js';
+import * as priorPrsRepo from './repository/prior-prs.repo.js';
+import type { PriorPr } from '@devdigest/shared';
 export type { IntentUpsert } from './repository/pull.repo.js';
 
 export class ReviewRepository {
@@ -38,6 +40,17 @@ export class ReviewRepository {
 
   getPrFiles(prId: string): Promise<(typeof t.prFiles.$inferSelect)[]> {
     return pullRepo.getPrFiles(this.db, prId);
+  }
+
+  /** Prior PRs in the same repo that touched one of the given files — Blast
+   *  Radius's "Prior PRs touching these files" panel. */
+  priorPrsTouchingFiles(args: {
+    repoId: string;
+    excludePrId: string;
+    filePaths: string[];
+    limit: number;
+  }): Promise<PriorPr[]> {
+    return priorPrsRepo.priorPrsTouchingFiles(this.db, args);
   }
 
   // ---- reviews + findings -------------------------------------------------

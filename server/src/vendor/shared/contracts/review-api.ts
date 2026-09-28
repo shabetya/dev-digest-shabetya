@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { FindingShape, checkTrifectaInvariant, Verdict } from './findings.js';
-import { Intent, SmartDiff } from './brief.js';
+import { BlastRadius, Intent, SmartDiff } from './brief.js';
 
 /**
  * A2 — Review-Core API surface contracts. These extend the core
@@ -70,3 +70,26 @@ export type PrIntentRecord = z.infer<typeof PrIntentRecord>;
 /** Smart-diff response for a PR (the SmartDiff). */
 export const SmartDiffResponse = SmartDiff;
 export type SmartDiffResponse = z.infer<typeof SmartDiffResponse>;
+
+/** A prior PR that touched one of the same files as the current one. */
+export const PriorPr = z.object({
+  number: z.number().int(),
+  title: z.string(),
+  author: z.string(),
+  date: z.string().nullable(),
+  takeaway: z.string().nullable(),
+});
+export type PriorPr = z.infer<typeof PriorPr>;
+
+/**
+ * Blast-radius response for a PR (the BlastRadius plus whether it was
+ * computed on the degraded/best-effort path — e.g. repo-intel disabled or
+ * not yet indexed — and, if so, why), plus prior PRs that touched the same
+ * files (cross-PR history, no LLM call — see `priorPrsTouchingFiles`).
+ */
+export const BlastRadiusResponse = BlastRadius.extend({
+  degraded: z.boolean(),
+  degraded_reason: z.string().nullable(),
+  prior_prs: z.array(PriorPr),
+});
+export type BlastRadiusResponse = z.infer<typeof BlastRadiusResponse>;

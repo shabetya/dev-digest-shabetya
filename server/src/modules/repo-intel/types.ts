@@ -63,7 +63,17 @@ export interface BlastChangedSymbol {
 export interface BlastCallerRow {
   file: string;
   symbol: string;
-  /** Which changed symbol this caller reaches. */
+  /**
+   * Which changed symbol this caller reaches, identified by name only (no
+   * file component). Known limitation: if two `BlastChangedSymbol` entries
+   * share a `name` in different files, both query paths in `service.ts`
+   * (`references(ref, sym.name)` and `getResolvedCallers(..., nameSet)`)
+   * resolve callers by name, so this field can't distinguish which specific
+   * declaration was reached — a consumer grouping by `viaSymbol` (e.g.
+   * `blast/helpers.ts`) will merge the two symbols' caller lists. Fixing
+   * this requires keying by `(file, name)` through this port and both
+   * repo-intel query paths, not just the consumer.
+   */
   viaSymbol: string;
   /** 1-based line of the reference (representative; for the BlastRadius view). */
   line: number;

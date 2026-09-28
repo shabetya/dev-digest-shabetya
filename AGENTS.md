@@ -16,6 +16,7 @@ Node ≥ 22 · pnpm ≥ 10 · TypeScript · Docker (Postgres + pgvector, dev-onl
 | `client/` | `@devdigest/web` | Next.js 15 studio UI | [client/AGENTS.md](client/AGENTS.md) |
 | `reviewer-core/` | `@devdigest/reviewer-core` | diff → prompt → LLM → findings engine | [reviewer-core/AGENTS.md](reviewer-core/AGENTS.md) |
 | `e2e/` | `@devdigest/e2e` | deterministic browser e2e (agent-browser) | [e2e/AGENTS.md](e2e/AGENTS.md) |
+| `mcp-server/` | `@devdigest/mcp-server` | local MCP server (stdio) exposing PR-review tools over the API | [mcp-server/AGENTS.md](mcp-server/AGENTS.md) |
 
 Cross-package code goes through tsconfig path aliases, not published
 packages — e.g. `server` imports `reviewer-core/src` directly.
