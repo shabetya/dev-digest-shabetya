@@ -14,4 +14,5 @@ export const TABS: readonly EditorTab[] = [
   { key: "evals", labelKey: "editor.tabs.evals", icon: "FlaskConical" },
   { key: "stats", labelKey: "editor.tabs.stats", icon: "BarChart" },
   { key: "versions", labelKey: "editor.tabs.versions", icon: "History" },
+  { key: "context", labelKey: "editor.tabs.context", icon: "FileText" },
 ];

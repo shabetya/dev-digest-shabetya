@@ -48,6 +48,15 @@
       "memory": "Memory (dynamic)",
       "repoMap": "Repo skeleton — repo-intel (dynamic)",
       "specs": "Project context (dynamic)",
+      "specsUntrusted": "Project context — attached specs (untrusted) — {tokens} tok",
+      "specsSkipped": "Skipped project-context docs",
+      "skipReason": {
+        "too_large": "too large",
+        "empty": "empty",
+        "budget_exceeded": "token budget exceeded",
+        "unreadable": "unreadable",
+        "no_clone": "repo not cloned"
+      },
       "callers": "Callers of changed symbols — repo-intel (dynamic)",
       "user": "User / diff (dynamic)",
       "copy": "Copy",

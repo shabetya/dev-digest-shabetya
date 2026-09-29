@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { Tabs } from "@devdigest/ui";
 import type { Skill } from "@devdigest/shared";
 import { ConfigTab } from "./_components/ConfigTab";
+import { ContextTab } from "./_components/ContextTab";
 import { PreviewTab } from "./_components/PreviewTab";
 import { ReservedTab } from "./_components/ReservedTab";
 import { StatsTab } from "./_components/StatsTab";
@@ -35,6 +36,9 @@ export function SkillEditor({ skill, tab, onTab }: { skill: Skill; tab: string; 
       break;
     case "stats":
       body = <StatsTab skill={skill} />;
+      break;
+    case "context":
+      body = <ContextTab skill={skill} />;
       break;
     case "versions":
       body = <VersionsTab skill={skill} />;

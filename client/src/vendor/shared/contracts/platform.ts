@@ -288,15 +288,6 @@ export type SpecPreview = z.infer<typeof SpecPreview>;
 export const AttachContextBody = z.object({ paths: z.array(z.string()).max(50) });
 export type AttachContextBody = z.infer<typeof AttachContextBody>;
 
-// TODO(step 9): remove IndexStatus once useReindexContext is deleted.
-export const IndexStatus = z.object({
-  status: z.enum(['idle', 'cloning', 'parsing', 'embedding', 'done', 'error']),
-  pct: z.number().min(0).max(100),
-  message: z.string().nullish(),
-  chunks_indexed: z.number().int().nullish(),
-});
-export type IndexStatus = z.infer<typeof IndexStatus>;
-
 // ---- Run request (review trigger; owned by A2, contract lives here) ----
 export const RunRequest = z.object({
   agentId: z.string().optional(),
