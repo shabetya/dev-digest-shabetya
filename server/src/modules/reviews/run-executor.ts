@@ -7,6 +7,7 @@ import type { AgentRow } from '../../db/rows.js';
 import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './repository.js';
 import { REVIEW_STRATEGY } from './constants.js';
 import { taskLine } from './helpers.js';
+import { loadProjectContext } from './project-context.js';
 import { loadDiff } from './diff-loader.js';
 import type { IntentService } from './intent-service.js';
 
@@ -223,6 +224,19 @@ export class ReviewRunExecutor {
         runLog.info(`skills: ${skillsDetail.length} enabled skill(s) attached`);
       }
 
+      // Project context (SPEC-01) — the agent's effective doc list (own docs,
+      // then enabled linked skills'), read from the synced clone. Independent of
+      // repo-intel; never fails the run (skips are logged + traced).
+      let projectContext: Awaited<ReturnType<typeof loadProjectContext>> | undefined;
+      try {
+        const effectivePaths = await this.container.contextRepo.effectivePaths(agent.id);
+        if (effectivePaths.length > 0) {
+          projectContext = await loadProjectContext(this.container, repo, effectivePaths, runLog);
+        }
+      } catch (err) {
+        runLog.info(`project context skipped: ${(err as Error).message}`);
+      }
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -238,6 +252,8 @@ export class ReviewRunExecutor {
         // Linked, enabled skill bodies, in order — omitted (not an empty array)
         // when none apply, matching every other optional slot's contract.
         ...(skillBodies.length > 0 ? { skills: skillBodies } : {}),
+        // Project docs, pre-formatted `### <path>` entries — omitted when none injected.
+        ...(projectContext && projectContext.specs.length > 0 ? { specs: projectContext.specs } : {}),
         // T1.3 — pass the callers digest only when we built one. assemblePrompt
         // omits the section when this is empty/undefined.
         ...(callersDigest ? { callers: callersDigest } : {}),
@@ -341,6 +357,8 @@ export class ReviewRunExecutor {
         },
         prompt_assembly: outcome.assembly,
         skills_detail: skillsDetail.length > 0 ? skillsDetail : null,
+        project_context_detail:
+          projectContext && projectContext.detail.length > 0 ? projectContext.detail : null,
         tool_calls: outcome.chunks.map((c) => ({
           tool: 'review_file',
           args: c.label,
@@ -349,7 +367,7 @@ export class ReviewRunExecutor {
         })),
         raw_output: outcome.raw,
         memory_pulled: [],
-        specs_read: [],
+        specs_read: projectContext?.specsRead ?? [],
         // Persisted log = the run's FULL event buffer (incl. shared pre-work:
         // diff load + intent), not just events recorded inside this method.
         log: runLog.logFor(runId),

@@ -144,7 +144,7 @@ export class SimpleGitClient implements GitClient {
         const childRel = rel ? `${rel}/${e.name}` : e.name;
         if (e.isSymbolicLink()) continue; // never follow links out of the clone
         if (e.isDirectory()) {
-          if (!EXCLUDED_DIRS.has(e.name)) await walk(childRel);
+          if (!EXCLUDED_DIRS.has(e.name) && !EXCLUDED_DIRS.has(childRel)) await walk(childRel);
         } else if (e.isFile() && e.name.toLowerCase().endsWith('.md')) {
           if (out.length >= MAX_LIST_FILES) {
             truncated = true;

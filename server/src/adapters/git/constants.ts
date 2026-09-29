@@ -9,14 +9,12 @@ export const MAX_DOC_BYTES = 200 * 1024;
 /** Total injected project-context token budget. */
 export const MAX_CONTEXT_TOKENS = 30_000;
 
-/** Directory names never descended into when listing markdown. */
+/**
+ * Paths never descended into when listing markdown (AC-1). Entries are
+ * repo-relative; a bare name matches at any depth, a `/`-path only at that path.
+ */
 export const EXCLUDED_DIRS: ReadonlySet<string> = new Set([
   '.git',
   'node_modules',
-  'dist',
-  'build',
-  '.next',
-  'coverage',
-  'vendor',
-  '.devdigest',
+  '.devdigest/cache',
 ]);

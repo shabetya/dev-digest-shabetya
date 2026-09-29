@@ -1,6 +1,7 @@
 import type { Container } from '../../platform/container.js';
 import type { Skill, SkillSource, SkillStats, SkillType } from '@devdigest/shared';
 import { SkillsRepository } from './repository.js';
+import { validateAttachPaths } from '../_shared/attach-paths.js';
 import { toSkillDto, toSkillVersionDto, computeSkillStats, type SkillVersionDto } from './helpers.js';
 
 /**
@@ -34,7 +35,7 @@ export interface UpdateSkillInput {
 export class SkillsService {
   private repo: SkillsRepository;
 
-  constructor(container: Container) {
+  constructor(private container: Container) {
     this.repo = new SkillsRepository(container.db);
   }
 
@@ -81,6 +82,23 @@ export class SkillsService {
       ...(patch.evidence_files !== undefined ? { evidenceFiles: patch.evidence_files } : {}),
     });
     return row ? toSkillDto(row) : undefined;
+  }
+
+  /**
+   * Replace the skill's attached project-context docs with `paths` (ordered).
+   * Paths are validated (422) but need not exist in any repo. Returns the
+   * ordered paths, or undefined when the skill isn't in this workspace.
+   */
+  async setContextPaths(
+    workspaceId: string,
+    skillId: string,
+    paths: string[],
+  ): Promise<string[] | undefined> {
+    validateAttachPaths(paths);
+    const skill = await this.repo.getById(workspaceId, skillId);
+    if (!skill) return undefined;
+    await this.container.contextRepo.setSkillPaths(skillId, paths);
+    return this.container.contextRepo.skillPaths(skillId);
   }
 
   /**

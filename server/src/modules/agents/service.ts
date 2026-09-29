@@ -10,6 +10,7 @@ import type {
 } from '@devdigest/shared';
 import { AgentsRepository } from './repository.js';
 import { toAgentDto, toAgentVersionDto } from './helpers.js';
+import { validateAttachPaths } from '../_shared/attach-paths.js';
 
 /**
  * A2 — agents service. Business logic for the Agents tab + Agent Editor.
@@ -133,6 +134,23 @@ export class AgentsService {
     if (!agent) return undefined;
     const row = await this.repo.getVersion(agentId, version);
     return row ? toAgentVersionDto(row) : undefined;
+  }
+
+  /**
+   * Replace the agent's attached project-context docs with `paths` (ordered).
+   * Paths are validated (422) but need not exist in any repo. Returns the
+   * ordered paths, or undefined when the agent isn't in this workspace.
+   */
+  async setContextPaths(
+    workspaceId: string,
+    agentId: string,
+    paths: string[],
+  ): Promise<string[] | undefined> {
+    validateAttachPaths(paths);
+    const agent = await this.repo.getById(workspaceId, agentId);
+    if (!agent) return undefined;
+    await this.container.contextRepo.setAgentPaths(agentId, paths);
+    return this.container.contextRepo.agentPaths(agentId);
   }
 
   /** Linked skills for an agent as AgentSkillLink[] (ordered). */
