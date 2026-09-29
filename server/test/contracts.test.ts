@@ -5,6 +5,7 @@ import {
   Intent,
   BlastRadius,
   Risks,
+  PrBrief,
   PrHistory,
   SmartDiff,
   Conformance,
@@ -112,6 +113,31 @@ describe('AI contracts parse fixtures', () => {
         ],
       }),
     ).not.toThrow();
+  });
+
+  it('PrBrief (SPEC-03)', () => {
+    const valid = {
+      summary: 'Adds rate limiting.',
+      risks: [{ title: 't', explanation: 'e', severity: 'high', file_refs: ['a.ts'] }],
+      review_focus: [{ file: 'a.ts', line: 10, reason: 'core change' }],
+      missing: ['intent'],
+      generated_at: '2026-01-01T00:00:00.000Z',
+      generated_for_sha: 'abc',
+      model: 'gpt-4.1',
+      usage: { prompt_tokens: 10, completion_tokens: 5, cost_usd: null },
+    };
+    expect(PrBrief.safeParse(valid).success).toBe(true);
+    expect(PrBrief.safeParse({ ...valid, usage: null }).success).toBe(true);
+    const { summary: _s, ...noSummary } = valid;
+    expect(PrBrief.safeParse(noSummary).success).toBe(false);
+    expect(
+      PrBrief.safeParse({ ...valid, risks: [{ ...valid.risks[0], severity: 'critical' }] }).success,
+    ).toBe(false);
+    expect(
+      PrBrief.safeParse({ ...valid, review_focus: [{ file: 'a.ts', line: 0, reason: 'r' }] }).success,
+    ).toBe(false);
+    // pre-SPEC-03 shape is rejected (treated as "no brief" by the repository)
+    expect(PrBrief.safeParse({ intent: {}, blast: {}, risks: { risks: [] }, history: { history: [] } }).success).toBe(false);
   });
 
   it('SmartDiff (data.jsx DIFF)', () => {

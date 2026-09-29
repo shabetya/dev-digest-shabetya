@@ -81,6 +81,22 @@ export class ContextRepository {
   }
 
   /**
+   * Union of the effective doc paths of every ENABLED agent in the workspace
+   * (deduped, first occurrence wins; agents in creation order so the result is
+   * deterministic). Used by the PR brief, which has no single reviewer.
+   */
+  async workspaceEffectivePaths(workspaceId: string): Promise<string[]> {
+    const agentRows = await this.db
+      .select({ id: t.agents.id })
+      .from(t.agents)
+      .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.enabled, true)))
+      .orderBy(asc(t.agents.createdAt), asc(t.agents.id));
+    const all: string[] = [];
+    for (const a of agentRows) all.push(...(await this.effectivePaths(a.id)));
+    return dedupePaths(all);
+  }
+
+  /**
    * `used_by_agents` per path (AC-11): distinct workspace agents (enabled or
    * not) whose effective list contains the path, directly or via an enabled
    * linked skill. Global by path, not repo-scoped.

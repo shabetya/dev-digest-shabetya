@@ -1,7 +1,7 @@
 import type { Container } from '../../../platform/container.js';
 import type { SmartDiff, SmartDiffGroup, SmartDiffRole } from '@devdigest/shared';
 import { NotFoundError } from '../../../platform/errors.js';
-import { classifyFile } from './classify.js';
+import { classifyFile } from '../../_shared/classify-file.js';
 
 /** Fixed display/priority order every Smart Diff response groups files in —
  *  ALL FIVE groups render unconditionally, even ones with `files: []`. */

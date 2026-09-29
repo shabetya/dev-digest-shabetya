@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { PrFile, ReviewRecord, SmartDiffResponse } from "@devdigest/shared";
@@ -15,6 +15,7 @@ vi.mock("../../../../../../../lib/hooks/reviews", () => ({
   useFindingAction: () => ({ mutate: findingActionMutate, isPending: false }),
 }));
 
+import type { DiffFocus } from "@/components/diff-viewer";
 import { DiffTab } from "./DiffTab";
 
 afterEach(cleanup);
@@ -83,12 +84,24 @@ const REVIEWS: ReviewRecord[] = [
   },
 ];
 
-function renderDiffTab() {
-  return render(
+function tree(focus?: DiffFocus | null, files: PrFile[] = FILES) {
+  return (
     <NextIntlClientProvider locale="en" messages={{ prReview: prReviewMessages, shell: shellMessages }}>
-      <DiffTab prId="pr1" filesCount={FILES.length} files={FILES} canComment repoFullName="acme/x" headSha="a1b2c3d4" />
-    </NextIntlClientProvider>,
+      <DiffTab
+        prId="pr1"
+        filesCount={files.length}
+        files={files}
+        canComment
+        repoFullName="acme/x"
+        headSha="a1b2c3d4"
+        focus={focus}
+      />
+    </NextIntlClientProvider>
   );
+}
+
+function renderDiffTab(focus?: DiffFocus | null, files: PrFile[] = FILES) {
+  return render(tree(focus, files));
 }
 
 describe("DiffTab — Smart Diff grouping + toggle (full flow)", () => {
@@ -141,5 +154,61 @@ describe("DiffTab — Smart Diff grouping + toggle (full flow)", () => {
     expect(screen.queryByText("Core")).not.toBeInTheDocument();
     expect(screen.getByText("src/service.ts")).toBeInTheDocument();
     expect(screen.getByText("README.md")).toBeInTheDocument();
+  });
+});
+
+describe("DiffTab — deep-link focus (?file=&line=)", () => {
+  const scrollIntoView = vi.fn();
+  beforeEach(() => {
+    scrollIntoView.mockClear();
+    // jsdom has no scrollIntoView
+    Element.prototype.scrollIntoView = scrollIntoView;
+  });
+
+  it("Smart order: opens the collapsed group and the card, marks and scrolls to the focused line; a later focus also opens", () => {
+    renderDiffTab({ file: "README.md", line: 1 });
+    // docs group is collapsed by default, but the focus forces it (and the card) open
+    expect(screen.getByText("new docs line")).toBeInTheDocument();
+    const marked = screen.getByTestId("diff-focused-line");
+    expect(marked).toHaveTextContent("new docs line");
+    expect(marked).toHaveAttribute("aria-current", "location");
+    expect(scrollIntoView).toHaveBeenCalled();
+
+    // a focus arriving after mount (URL change) opens an already-mounted, closed card
+    cleanup();
+    const second = render(tree(null));
+    expect(screen.queryByText("export * from './a';")).not.toBeInTheDocument();
+    second.rerender(tree({ file: "index.ts", line: 1 }));
+    expect(screen.getByText("export * from './a';")).toBeInTheDocument();
+    expect(screen.getByTestId("diff-focused-line")).toHaveTextContent("export * from './a';");
+  });
+
+  it("Original order: opens a large collapsed file and highlights the line", () => {
+    const big: PrFile = {
+      path: "src/big.ts",
+      additions: 900,
+      deletions: 0,
+      patch: "@@ -1,1 +40,2 @@\n ctx line\n+big added line",
+    };
+    const files = [...FILES, big];
+    const { rerender } = renderDiffTab(null, files);
+    fireEvent.click(screen.getByRole("switch")); // -> Original order (flat)
+    expect(screen.queryByText("big added line")).not.toBeInTheDocument();
+    rerender(tree({ file: "src/big.ts", line: 41 }, files));
+    expect(screen.getByText("big added line")).toBeInTheDocument();
+    expect(screen.getByTestId("diff-focused-line")).toHaveTextContent("big added line");
+  });
+
+  it("unknown file or line renders normally without a marker or error", () => {
+    renderDiffTab({ file: "nope/ghost.ts", line: 9 });
+    expect(screen.getByText("Core")).toBeInTheDocument();
+    expect(screen.queryByTestId("diff-focused-line")).not.toBeInTheDocument();
+    cleanup();
+
+    // known file, line outside the patch: card opens (scrolled to), nothing highlighted
+    renderDiffTab({ file: "src/service.ts", line: 999 });
+    expect(screen.getByText(/stripeKey/)).toBeInTheDocument();
+    expect(screen.queryByTestId("diff-focused-line")).not.toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalled();
   });
 });

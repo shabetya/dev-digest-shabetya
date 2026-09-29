@@ -90,3 +90,9 @@ export function lineSignFor(kind: Line["kind"]): CSSProperties {
     flexShrink: 0,
   };
 }
+
+/** Highlight for the deep-linked line (right-side lines only). */
+export const focusedLineStyle: CSSProperties = {
+  boxShadow: "inset 3px 0 0 var(--accent)",
+  background: "var(--accent-bg)",
+};

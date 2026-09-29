@@ -4,3 +4,5 @@
 export { DiffViewer } from "./DiffViewer";
 export { FileCard } from "./FileCard";
 export type { DiffCommentApi, DiffFindingsApi } from "./comments";
+export { fileAnchorId } from "./focus";
+export type { DiffFocus } from "./focus";

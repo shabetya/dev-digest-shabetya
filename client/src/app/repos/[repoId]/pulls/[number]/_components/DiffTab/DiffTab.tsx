@@ -3,7 +3,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { SectionLabel, Button, Toggle } from "@devdigest/ui";
-import { DiffViewer, type DiffCommentApi, type DiffFindingsApi } from "@/components/diff-viewer";
+import { DiffViewer, type DiffCommentApi, type DiffFindingsApi, type DiffFocus } from "@/components/diff-viewer";
 import { usePrComments, useCreatePrComment, useSmartDiff, usePrReviews, useFindingAction } from "@/lib/hooks/reviews";
 import { notify } from "@/lib/toast";
 import type { PrFile } from "@devdigest/shared";
@@ -20,9 +20,11 @@ interface DiffTabProps {
   /** Needed by the reused FindingCard to build a GitHub blob deep-link. */
   repoFullName?: string | null;
   headSha?: string | null;
+  /** Deep-link target from `?file=&line=`: open, scroll to and highlight it. */
+  focus?: DiffFocus | null;
 }
 
-export function DiffTab({ prId, filesCount, files, canComment, repoFullName, headSha }: DiffTabProps) {
+export function DiffTab({ prId, filesCount, files, canComment, repoFullName, headSha, focus }: DiffTabProps) {
   const t = useTranslations("prReview");
   const { data: comments } = usePrComments(prId);
   const create = useCreatePrComment(prId);
@@ -110,9 +112,9 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
         Files changed · {filesCount} files
       </SectionLabel>
       {smartDiff && smartOrder ? (
-        <SmartDiffView smartDiff={smartDiff} files={files} commenting={commenting} findingsApi={findingsApi} />
+        <SmartDiffView smartDiff={smartDiff} files={files} commenting={commenting} findingsApi={findingsApi} focus={focus} />
       ) : (
-        <DiffViewer files={files} commenting={commenting} />
+        <DiffViewer files={files} commenting={commenting} focus={focus} />
       )}
     </section>
   );

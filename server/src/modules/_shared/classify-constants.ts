@@ -3,7 +3,7 @@ import type { SmartDiffRole } from '@devdigest/shared';
 /**
  * Smart Diff path→role classification patterns.
  *
- * `classifyFile` (./classify.ts) checks these in `CLASSIFY_ORDER` — FIRST
+ * `classifyFile` (./classify-file.ts) checks these in `CLASSIFY_ORDER` — FIRST
  * MATCH WINS. Order is significant: several patterns deliberately overlap
  * (a snapshot inside `__tests__/`, a `.md` inside `.claude/`, a `README.md`
  * inside `e2e/`) — see `smart-diff-classify.test.ts` for the pinned cases.

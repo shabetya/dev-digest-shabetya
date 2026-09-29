@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { MockGitClient } from '../../adapters/mocks.js';
 import { RunLogger } from '../../platform/run-logger.js';
 import { runBus } from '../../platform/sse.js';
-import { loadProjectContext, sanitizePathForHeading } from './project-context.js';
+import { loadProjectContext } from './project-context.js';
+import { sanitizePathForHeading } from '../_shared/sanitize.js';
 import type { Container } from '../../platform/container.js';
 
 const repo = { owner: 'o', name: 'r', clonePath: '/c', defaultBranch: 'main' };

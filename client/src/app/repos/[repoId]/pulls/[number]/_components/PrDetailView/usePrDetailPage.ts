@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePullDetail, usePulls } from "@/lib/hooks";
 import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun } from "@/lib/hooks/reviews";
 import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
-import { buildPrDetailCrumb, flattenFindings, lethalTrifectaFindings } from "./helpers";
+import { buildFileFocusQuery, buildPrDetailCrumb, flattenFindings, lethalTrifectaFindings, parseDiffFocus } from "./helpers";
 
 /**
  * Orchestration for the PR-detail route: resolves the PR's uuid, wires every
@@ -61,6 +61,15 @@ export function usePrDetailPage(repoId: string, number: string) {
   );
   const setTab = React.useCallback((t: string) => setParam("tab", t), [setParam]);
 
+  // Deep link into the Files tab (`?tab=diff&file=&line=`) — used by the PR brief.
+  const focus = React.useMemo(() => parseDiffFocus(search), [search]);
+  const navigateToFile = React.useCallback(
+    (file: string, line?: number | null) => {
+      router.replace(`/repos/${repoId}/pulls/${number}?${buildFileFocusQuery(search.toString(), file, line)}`);
+    },
+    [search, router, repoId, number],
+  );
+
   // Reviews come newest-first; each is its own run (grouped into accordions).
   const runs = React.useMemo(() => reviews ?? [], [reviews]);
   const allFindings = React.useMemo(() => flattenFindings(runs), [runs]);
@@ -85,6 +94,8 @@ export function usePrDetailPage(repoId: string, number: string) {
     setTab,
     traceRunId,
     setParam,
+    focus,
+    navigateToFile,
     runs,
     prRuns,
     liveRunIds,

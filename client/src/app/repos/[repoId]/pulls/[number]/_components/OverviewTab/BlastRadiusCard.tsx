@@ -129,20 +129,23 @@ export function BlastRadiusCard({
           <BlastRadiusGraph downstream={blast.downstream} />
         ) : (
           <div style={s.blastGroups}>
-            {blast.downstream.map((group) => {
-              const isOpen = openGroups[group.symbol] ?? false;
+            {blast.downstream.map((group, gi) => {
+              // Same-named symbols in different files yield several groups with an
+              // identical `symbol`, so key/open-state use the index too.
+              const groupKey = `${group.symbol}#${gi}`;
+              const isOpen = openGroups[groupKey] ?? false;
               return (
-                <div key={group.symbol} style={s.blastGroup}>
+                <div key={groupKey} style={s.blastGroup}>
                   <div
                     style={s.blastGroupHeader}
                     role="button"
                     tabIndex={0}
                     aria-expanded={isOpen}
-                    onClick={() => toggleGroup(group.symbol)}
+                    onClick={() => toggleGroup(groupKey)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        toggleGroup(group.symbol);
+                        toggleGroup(groupKey);
                       }
                     }}
                   >

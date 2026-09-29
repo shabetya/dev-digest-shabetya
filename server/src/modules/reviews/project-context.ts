@@ -1,8 +1,13 @@
 import type { ProjectContextDetail } from '@devdigest/shared';
 import type { Container } from '../../platform/container.js';
-import type { RunLogger } from '../../platform/run-logger.js';
 import { MAX_CONTEXT_TOKENS, MAX_DOC_BYTES } from '../../adapters/git/constants.js';
 import { DocTooLargeError } from '../../adapters/git/markdown-path.js';
+import { sanitizePathForHeading } from '../_shared/sanitize.js';
+
+/** The only logging surface `loadProjectContext` needs (a `RunLogger` satisfies it). */
+export interface ProjectContextLogger {
+  info(msg: string): void;
+}
 
 /** Result of resolving an agent's attached docs for one run (AC-14..18). */
 export interface ProjectContextResult {
@@ -15,14 +20,6 @@ export interface ProjectContextResult {
 }
 
 /**
- * Make a path safe to embed in a `### <path>` heading: keep a conservative
- * character set so a crafted filename cannot forge a delimiter or heading.
- */
-export function sanitizePathForHeading(path: string): string {
-  return path.replace(/[^A-Za-z0-9._\-/ @+()]/g, '_');
-}
-
-/**
  * Read each attached doc from the synced default-branch clone. Never throws:
  * every failure becomes a skip with a reason and a run-log line naming the path.
  * Docs are never truncated; once the running token total would exceed the
@@ -32,7 +29,7 @@ export async function loadProjectContext(
   container: Container,
   repo: { owner: string; name: string; clonePath: string | null; defaultBranch: string },
   paths: string[],
-  runLog: RunLogger,
+  runLog: ProjectContextLogger,
 ): Promise<ProjectContextResult> {
   const out: ProjectContextResult = { specs: [], specsRead: [], detail: [] };
   if (paths.length === 0) return out;
