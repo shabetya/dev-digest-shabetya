@@ -35,6 +35,7 @@ export function ContextPreviewModal({
         </Button>
       }
     >
+      <div style={s.previewWrap}>
       <div style={s.previewMeta}>
         <Badge>{t("readOnly")}</Badge>
         {file && <Badge>{t("tokens", { count: file.tokens })}</Badge>}
@@ -54,6 +55,7 @@ export function ContextPreviewModal({
           <Markdown>{data.content}</Markdown>
         </div>
       )}
+      </div>
     </Modal>
   );
 }

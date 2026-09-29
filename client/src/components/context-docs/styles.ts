@@ -31,6 +31,7 @@ export const s = {
   moveBtns: { display: "flex", flexDirection: "column" } satisfies CSSProperties,
   actions: { display: "flex", gap: 10, marginTop: 14, alignItems: "center" } satisfies CSSProperties,
   savedNote: { fontSize: 13, color: "var(--ok)" } satisfies CSSProperties,
+  previewWrap: { padding: "16px 28px 20px" } satisfies CSSProperties,
   previewMeta: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14 } satisfies CSSProperties,
   previewBody: { fontSize: 14, color: "var(--text-secondary)" } satisfies CSSProperties,
 } as const;
