@@ -15,6 +15,7 @@ export const MAX_CONTEXT_TOKENS = 30_000;
  */
 export const EXCLUDED_DIRS: ReadonlySet<string> = new Set([
   '.git',
+  '.claude',
   'node_modules',
   '.devdigest/cache',
 ]);
