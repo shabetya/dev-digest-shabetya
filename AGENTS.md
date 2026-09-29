@@ -68,5 +68,6 @@ packages — e.g. `server` imports `reviewer-core/src` directly.
 | [TESTING.md](TESTING.md) | deciding which suite an untested change needs, or debugging why a CI workflow didn't run |
 | [docs/agent-prompts/](docs/agent-prompts/README.md) | authoring/editing a built-in reviewer agent's system prompt, or picking its default model |
 | [docs/smart-diff.md](docs/smart-diff.md) | working on the Smart Diff file-grouping/inline-findings feature (spans `server/` + `client/`), or the `classifyFile` role rules |
+| [specs/README.md](specs/README.md) | writing a spec for a feature whose own goals require changes in more than one package — single-package specs go in that package's own `specs/` instead |
 | a package's own `AGENTS.md` (linked in the table above) | you're about to touch files inside that package |
 | a package's `docs/` / `specs/` / `INSIGHTS.md` | see that package's own `AGENTS.md` — same "use when" pattern, one level down |
