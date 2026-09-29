@@ -26,23 +26,92 @@ export const Conformance = z.object({
 export type Conformance = z.infer<typeof Conformance>;
 
 // ---- Onboarding ----
-export const OnboardingLink = z.object({
-  label: z.string(),
-  path: z.string(),
-});
-export type OnboardingLink = z.infer<typeof OnboardingLink>;
+// Structured onboarding tour (SPEC-02). Persisted as JSON in the `onboarding`
+// table; `generated_at` is the row column, merged in on read. `version` guards
+// future shape changes: a stored row that fails safeParse is treated as "no tour".
+export const ONBOARDING_VERSION = 1 as const;
 
-export const OnboardingSection = z.object({
-  kind: z.string(),
-  title: z.string(),
-  body: z.string(), // markdown
-  diagram: z.string().nullish(), // mermaid
-  links: z.array(OnboardingLink),
+export const OnboardingNodeKind = z.enum([
+  'client',
+  'server',
+  'middleware',
+  'datastore',
+  'external',
+  'api',
+  'other',
+]);
+export type OnboardingNodeKind = z.infer<typeof OnboardingNodeKind>;
+
+export const OnboardingDiagramNode = z.object({
+  id: z.string().min(1).max(64),
+  label: z.string().min(1).max(80),
+  kind: OnboardingNodeKind,
+  file: z.string().max(500).nullish(),
 });
-export type OnboardingSection = z.infer<typeof OnboardingSection>;
+export type OnboardingDiagramNode = z.infer<typeof OnboardingDiagramNode>;
+
+export const OnboardingDiagramEdge = z.object({
+  from: z.string().min(1).max(64),
+  to: z.string().min(1).max(64),
+  label: z.string().max(80).nullish(),
+});
+export type OnboardingDiagramEdge = z.infer<typeof OnboardingDiagramEdge>;
+
+export const OnboardingArchitecture = z.object({
+  prose: z.string(), // markdown, rendered with raw HTML disabled
+  nodes: z.array(OnboardingDiagramNode).max(12),
+  edges: z.array(OnboardingDiagramEdge).max(48),
+});
+export type OnboardingArchitecture = z.infer<typeof OnboardingArchitecture>;
+
+export const OnboardingCriticalPath = z.object({
+  path: z.string().min(1).max(500),
+  description: z.string(),
+  /** Distinct caller files, computed from repo-intel — never from model output. */
+  callers: z.number().int().min(0).nullish(),
+});
+export type OnboardingCriticalPath = z.infer<typeof OnboardingCriticalPath>;
+
+// Single line, no control characters (a multi-line payload executes on paste).
+export const OnboardingRunStep = z.object({
+  command: z
+    .string()
+    .min(1)
+    .max(300)
+    // eslint-disable-next-line no-control-regex
+    .regex(/^[^\u0000-\u001f\u007f]+$/, 'command must be a single line'),
+  comment: z.string().max(300).nullish(),
+});
+export type OnboardingRunStep = z.infer<typeof OnboardingRunStep>;
+
+export const OnboardingReadingItem = z.object({
+  path: z.string().min(1).max(500),
+  reason: z.string(),
+});
+export type OnboardingReadingItem = z.infer<typeof OnboardingReadingItem>;
+
+export const OnboardingFirstTask = z.object({
+  title: z.string().min(1),
+  description: z.string(),
+  files: z.array(z.string().min(1).max(500)).min(1).max(8),
+});
+export type OnboardingFirstTask = z.infer<typeof OnboardingFirstTask>;
+
+export const OnboardingSections = z.object({
+  architecture: OnboardingArchitecture,
+  critical_paths: z.array(OnboardingCriticalPath),
+  run_locally: z.array(OnboardingRunStep),
+  reading_path: z.array(OnboardingReadingItem),
+  first_tasks: z.array(OnboardingFirstTask).max(5),
+});
+export type OnboardingSections = z.infer<typeof OnboardingSections>;
 
 export const Onboarding = z.object({
-  sections: z.array(OnboardingSection),
+  version: z.literal(ONBOARDING_VERSION),
+  /** Snapshot of IndexState.filesIndexed at generation time. */
+  index_files: z.number().int().min(0),
+  generated_at: z.string(),
+  sections: OnboardingSections,
 });
 export type Onboarding = z.infer<typeof Onboarding>;
 

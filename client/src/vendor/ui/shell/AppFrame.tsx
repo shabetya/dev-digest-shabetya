@@ -24,7 +24,7 @@ export function AppFrame({
       }}
     >
       <Sidebar ctx={ctx} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         <Topbar ctx={ctx} crumb={crumb} />
         <main style={{ flex: 1, minHeight: 0, overflow: "auto" }}>{children}</main>
       </div>
