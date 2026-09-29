@@ -3,6 +3,6 @@
 - spec: specs/SPEC-01-project-context.md
 - flags: --docs, --max-iter 3
 - BASE: dd38b145e77f6e4186e81bd3c2d7516ee6361c4f
-- phase: 1 (implement) — in progress
-- iteration: 0
-- commits: steps 2-12 done; gap: GET attach endpoints missing (fixing); next: phase 2 verify
+- phase: 4 (review loop) — iteration 1
+- iteration: 1
+- commits: steps 2-12 + GET fix committed (HEAD current)

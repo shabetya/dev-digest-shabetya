@@ -12,7 +12,7 @@ import type {
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from './diff-parser.js';
 import { EXCLUDED_DIRS, MAX_DOC_BYTES, MAX_LIST_FILES } from './constants.js';
-import { assertMarkdownPath, InvalidMarkdownPathError, isInside } from './markdown-path.js';
+import { assertMarkdownPath, DocTooLargeError, InvalidMarkdownPathError, isInside } from './markdown-path.js';
 
 /**
  * Depth fetched by `sync()`. Deeper than the shallow clone (CLONE_DEPTH=1) so the
@@ -167,7 +167,7 @@ export class SimpleGitClient implements GitClient {
     }
     const st = await stat(real);
     if (!st.isFile()) throw new InvalidMarkdownPathError(`not a file: ${path}`);
-    if (st.size > maxBytes) throw new Error(`file too large: ${path}`);
+    if (st.size > maxBytes) throw new DocTooLargeError(`file too large: ${path}`);
     return readFile(real, 'utf8');
   }
 }

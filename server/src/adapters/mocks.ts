@@ -35,7 +35,7 @@ import type {
   LinkFetchResult,
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from './git/diff-parser.js';
-import { assertMarkdownPath } from './git/markdown-path.js';
+import { assertMarkdownPath, DocTooLargeError } from './git/markdown-path.js';
 
 /**
  * Deterministic MOCK adapters for tests/dev — NO real network. Each mirrors the
@@ -306,7 +306,7 @@ export class MockGitClient implements GitClient {
     assertMarkdownPath(path);
     const content = this.opts.files?.[path];
     if (content === undefined) throw new Error(`ENOENT: ${path}`);
-    if (Buffer.byteLength(content) > maxBytes) throw new Error(`file too large: ${path}`);
+    if (Buffer.byteLength(content) > maxBytes) throw new DocTooLargeError(`file too large: ${path}`);
     return content;
   }
 }

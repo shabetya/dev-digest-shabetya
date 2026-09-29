@@ -9,6 +9,14 @@ export class InvalidMarkdownPathError extends Error {
   }
 }
 
+/** Thrown when a markdown file exceeds the allowed byte size. */
+export class DocTooLargeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DocTooLargeError';
+  }
+}
+
 /** Validate a single repo-relative markdown path (no fs access). */
 export function assertMarkdownPath(path: string): void {
   if (typeof path !== 'string' || path.length === 0) {

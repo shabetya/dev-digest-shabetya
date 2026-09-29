@@ -2,6 +2,7 @@ import type { ProjectContextDetail } from '@devdigest/shared';
 import type { Container } from '../../platform/container.js';
 import type { RunLogger } from '../../platform/run-logger.js';
 import { MAX_CONTEXT_TOKENS, MAX_DOC_BYTES } from '../../adapters/git/constants.js';
+import { DocTooLargeError } from '../../adapters/git/markdown-path.js';
 
 /** Result of resolving an agent's attached docs for one run (AC-14..18). */
 export interface ProjectContextResult {
@@ -67,7 +68,7 @@ export async function loadProjectContext(
     try {
       content = await container.git.readMarkdown(ref, path, MAX_DOC_BYTES);
     } catch (err) {
-      skip(path, /too large/i.test((err as Error).message) ? 'too_large' : 'unreadable');
+      skip(path, err instanceof DocTooLargeError ? 'too_large' : 'unreadable');
       continue;
     }
     if (content.trim().length === 0) {
