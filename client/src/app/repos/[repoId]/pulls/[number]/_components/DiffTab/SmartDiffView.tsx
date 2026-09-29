@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@devdigest/ui";
 import type { SmartDiffResponse, SmartDiffRole } from "@devdigest/shared";
 import type { PrFile } from "@/lib/types";
-import { FileCard, type DiffCommentApi, type DiffFindingsApi } from "@/components/diff-viewer";
+import { FileCard, type DiffCommentApi, type DiffFindingsApi, type DiffFocus } from "@/components/diff-viewer";
 import { s, chevronForGroup } from "./styles";
 
 /** Groups collapsed by default (whole category, not just its files) —
@@ -49,21 +49,31 @@ export function SmartDiffView({
   files,
   commenting,
   findingsApi,
+  focus,
 }: {
   smartDiff: SmartDiffResponse;
   files: PrFile[];
   commenting?: DiffCommentApi;
   findingsApi?: DiffFindingsApi;
+  /** Deep-link target: its group is forced open and its file card opens. */
+  focus?: DiffFocus | null;
 }) {
   const t = useTranslations("prReview");
 
   // Whole-category open/closed state, one entry per role, initialized from
   // COLLAPSED_BY_DEFAULT — independent of each file's own auto-expand state.
+  const focusRole = focus ? smartDiff.groups.find((g) => g.files.some((f) => f.path === focus.file))?.role : undefined;
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
-    for (const role of Object.keys(ROLE_LABEL_KEY)) init[role] = !COLLAPSED_BY_DEFAULT.has(role as SmartDiffRole);
+    for (const role of Object.keys(ROLE_LABEL_KEY)) {
+      init[role] = !COLLAPSED_BY_DEFAULT.has(role as SmartDiffRole) || role === focusRole;
+    }
     return init;
   });
+  // A focus that arrives after mount must also open a collapsed group.
+  React.useEffect(() => {
+    if (focusRole) setOpenGroups((prev) => (prev[focusRole] ? prev : { ...prev, [focusRole]: true }));
+  }, [focusRole, focus?.file]);
   const toggleGroup = (role: SmartDiffRole) => setOpenGroups((prev) => ({ ...prev, [role]: !prev[role] }));
 
   const filesByPath = React.useMemo(() => {
@@ -122,6 +132,7 @@ export function SmartDiffView({
                       file={file}
                       commenting={commenting}
                       findingsApi={findingsApi}
+                      focus={focus}
                       // Every file starts closed here — Smart order is meant to
                       // be scanned closed (role, count, finding dots) before
                       // opening anything, unlike the flat Original order view

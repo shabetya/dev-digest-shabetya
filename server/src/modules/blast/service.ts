@@ -1,7 +1,7 @@
 import type { Container } from '../../platform/container.js';
 import type { BlastRadiusResponse } from '@devdigest/shared';
 import { NotFoundError } from '../../platform/errors.js';
-import { mapBlastResult } from './helpers.js';
+import { mapBlastResult } from '../_shared/blast-map.js';
 import { PRIOR_PRS_LIMIT } from './constants.js';
 
 /**

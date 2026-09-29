@@ -2,9 +2,12 @@
    Import from "@/lib/hooks" for the platform hooks (settings/repos/pulls/context)
    or from a domain file directly (e.g. "@/lib/hooks/reviews") — both resolve here. */
 export * from "./core";
+export * from "./context";
 export * from "./agents";
 export * from "./reviews";
 export * from "./trace";
 export * from "./repo-intel";
 export * from "./conventions";
 export * from "./intent";
+export * from "./onboarding";
+export * from "./brief";

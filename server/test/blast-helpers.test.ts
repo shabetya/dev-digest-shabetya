@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapBlastResult } from '../src/modules/blast/helpers.js';
+import { mapBlastResult } from '../src/modules/_shared/blast-map.js';
 import type { BlastResult } from '../src/modules/repo-intel/types.js';
 import type { PriorPr } from '@devdigest/shared';
 

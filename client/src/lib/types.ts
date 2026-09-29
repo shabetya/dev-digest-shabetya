@@ -28,7 +28,9 @@ export type {
   PrReviewComment,
   PrStatus,
   SpecFile,
-  IndexStatus,
+  SpecFileList,
+  SpecPreview,
+  AttachContextBody,
 } from "@devdigest/shared";
 
 export type { Review, Finding, Severity, Verdict } from "@devdigest/shared";

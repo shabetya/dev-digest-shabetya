@@ -9,7 +9,8 @@ import { SEV } from "@devdigest/ui";
 import type { FindingRecord } from "@devdigest/shared";
 import { commentTargetFor, type CommentThread, type DiffCommentApi, type DiffFindingsApi, cs } from "../comments";
 import { type Line } from "../helpers";
-import { s, lineRowFor, lineSignFor } from "../styles";
+import { s, lineRowFor, lineSignFor, focusedLineStyle } from "../styles";
+import { scrollIntoViewSafe } from "../focus";
 import { CommentThreadView } from "../CommentThreadView";
 import { InlineComposer } from "../InlineComposer";
 
@@ -29,6 +30,7 @@ export function CodeLine({
   commenting,
   findings,
   findingsApi,
+  focused,
 }: {
   ln: Line;
   path: string;
@@ -37,10 +39,17 @@ export function CodeLine({
   /** Findings anchored to this line (Smart Diff inline annotations). */
   findings?: FindingRecord[];
   findingsApi?: DiffFindingsApi;
+  /** Deep-link target line: highlighted and scrolled into view. */
+  focused?: boolean;
 }) {
   const t = useTranslations("prReview");
   const [hover, setHover] = React.useState(false);
   const [composing, setComposing] = React.useState(false);
+  const rowRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (focused) scrollIntoViewSafe(rowRef.current);
+  }, [focused]);
 
   if (ln.kind === "hunk") {
     return (
@@ -60,7 +69,12 @@ export function CodeLine({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div style={lineRowFor(ln.kind)}>
+      <div
+        ref={rowRef}
+        style={focused ? { ...lineRowFor(ln.kind), ...focusedLineStyle } : lineRowFor(ln.kind)}
+        data-testid={focused ? "diff-focused-line" : undefined}
+        aria-current={focused ? "location" : undefined}
+      >
         <span className="mono tnum" style={{ ...s.lineNo, position: "relative" }}>
           {showAdd && target && (
             <button

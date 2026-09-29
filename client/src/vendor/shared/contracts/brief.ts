@@ -71,7 +71,8 @@ export const RiskSeverity = z.enum(['high', 'medium', 'low']);
 export type RiskSeverity = z.infer<typeof RiskSeverity>;
 
 export const Risk = z.object({
-  kind: z.string(),
+  /** Optional category label (e.g. 'security'); the PR Brief does not require one. */
+  kind: z.string().optional(),
   title: z.string(),
   explanation: z.string(),
   severity: RiskSeverity,
@@ -136,10 +137,43 @@ export const SmartDiff = z.object({
 export type SmartDiff = z.infer<typeof SmartDiff>;
 
 // ---- Composed PR Brief (pr_brief.json) ----
+/** A brief input that was unavailable when the brief was generated. */
+export const BriefMissingInput = z.enum(['intent', 'blast', 'specs']);
+export type BriefMissingInput = z.infer<typeof BriefMissingInput>;
+
+/** One entry of the ordered "read these first" list. `line` is validated server-side. */
+export const ReviewFocusItem = z.object({
+  file: z.string(),
+  line: z.number().int().positive(),
+  reason: z.string(),
+});
+export type ReviewFocusItem = z.infer<typeof ReviewFocusItem>;
+
 export const PrBrief = z.object({
-  intent: Intent,
-  blast: BlastRadius,
-  risks: Risks,
-  history: PrHistory,
+  summary: z.string(),
+  risks: z.array(Risk),
+  review_focus: z.array(ReviewFocusItem),
+  missing: z.array(BriefMissingInput),
+  generated_at: z.string(),
+  /** PR head SHA at generation time (drives the "earlier commit" notice). */
+  generated_for_sha: z.string(),
+  model: z.string(),
+  /** null when the provider reported no usage. */
+  usage: z
+    .object({
+      prompt_tokens: z.number(),
+      completion_tokens: z.number(),
+      cost_usd: z.number().nullable(),
+    })
+    .nullable(),
 });
 export type PrBrief = z.infer<typeof PrBrief>;
+
+/** Machine-readable `error.details.reason` for brief generation failures. */
+export const BriefErrorReason = z.enum([
+  'llm_unavailable',
+  'no_files',
+  'generation_failed',
+  'generation_in_progress',
+]);
+export type BriefErrorReason = z.infer<typeof BriefErrorReason>;

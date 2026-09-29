@@ -1,17 +1,66 @@
 {
-  "title": "Onboarding Tour",
-  "sections": "Sections",
-  "sectionCount": "{count} sections",
+  "title": "Onboarding for ",
+  "crumb": "Onboarding Tour",
+  "subtitle": "Generated from index of {count} files · last refreshed {ago}",
   "regenerate": "Regenerate",
   "regenerating": "Regenerating…",
-  "unknownError": "Unknown error",
+  "shareLink": "Share link",
+  "linkCopied": "Link copied",
+  "shareFallback": "Copy this link",
+  "onThisPage": "On this page",
+  "expand": "Expand section",
   "generate": {
-    "title": "Generate onboarding tour",
-    "body": "DevDigest indexes the repo and specs, then writes a 5-section guided tour: overview, architecture, key modules, getting started, and conventions & gotchas.",
+    "title": "No onboarding tour yet",
+    "body": "DevDigest turns the repo index into a guided tour: architecture overview, critical paths, how to run locally, a reading path and first tasks.",
     "cta": "Generate onboarding tour",
-    "generating": "Generating…"
+    "generating": "Generating… this can take a minute."
   },
   "loadError": {
     "title": "Couldn’t load the onboarding tour"
+  },
+  "error": {
+    "generation_in_progress": "A tour is already being generated for this repo. Try again in a moment.",
+    "no_clone": "This repo has no local clone yet. Sync the repo first, then generate the tour.",
+    "index_unavailable": "The repo index is unavailable. Wait for indexing to finish (and make sure repo intelligence is enabled), then try again.",
+    "llm_unavailable": "The language model is unavailable. Check your API key in Settings and try again.",
+    "unknown": "Couldn’t generate the tour: {message}"
+  },
+  "sections": {
+    "architecture": "Architecture overview",
+    "critical-paths": "Critical paths",
+    "run-locally": "How to run locally",
+    "reading-path": "Guided reading path",
+    "first-tasks": "First tasks"
+  },
+  "empty": "Nothing could be verified for this section",
+  "architecture": {
+    "diagramLabel": "Architecture diagram",
+    "edgesLabel": "Diagram connections",
+    "legend": "Legend",
+    "kind": {
+      "client": "Client",
+      "server": "Server",
+      "middleware": "Middleware",
+      "datastore": "Datastore",
+      "external": "External",
+      "api": "API",
+      "other": "Other"
+    }
+  },
+  "criticalPaths": {
+    "callers": "{count} callers",
+    "open": "Open",
+    "openLabel": "Open {path} on GitHub"
+  },
+  "runLocally": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyLabel": "Copy command {index}"
+  },
+  "readingPath": {
+    "listLabel": "Files to read, in order"
+  },
+  "firstTasks": {
+    "files": "Files"
   }
 }
