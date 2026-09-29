@@ -32,3 +32,16 @@ export const skillVersions = pgTable(
   },
   (t) => ({ pk: primaryKey({ columns: [t.skillId, t.version] }) }),
 );
+
+/** Repo-relative context docs attached to a skill (PK leads with skill_id, so it doubles as the FK index). */
+export const skillContextDocs = pgTable(
+  'skill_context_docs',
+  {
+    skillId: uuid('skill_id')
+      .notNull()
+      .references(() => skills.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    order: integer('order').notNull().default(0),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.skillId, t.path] }) }),
+);
