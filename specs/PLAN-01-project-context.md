@@ -87,6 +87,6 @@ Spec editing; architecture/security review (separate agents); editing docs, cove
 10. AC-20 total = sum of injected `project_context_detail[].tokens`.
 11. p95 target: tokenize live, no cache; add mtime cache only if measured slow.
 
-## Execution mode (choose before implementation)
+## Execution mode
 
-Full multi-agent pipeline (implementer → test-writer → plan-verifier / architecture-reviewer → doc-writer) or single-agent pass. Planner leans pipeline.
+Multi-agent pipeline (chosen by the user via `/run-plan`): implementer → plan-verifier → architecture-reviewer → review loop → doc-writer (`--docs`). Tests and security review are outside this pipeline.
