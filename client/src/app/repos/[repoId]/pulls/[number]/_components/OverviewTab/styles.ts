@@ -135,6 +135,7 @@ export const s = {
     marginLeft: "auto",
   } satisfies CSSProperties,
   blastGroupBody: {
+    minWidth: 0,
     borderTop: "1px solid var(--border)",
     padding: "8px 12px",
     display: "flex",
@@ -148,11 +149,18 @@ export const s = {
   blastCallerRow: {
     fontSize: 13,
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 4,
+    minWidth: 0,
   } satisfies CSSProperties,
   blastCallerPrefix: {
     color: "var(--text-muted)",
+    flexShrink: 0,
+  } satisfies CSSProperties,
+  /** Lets a long unbroken file path wrap instead of overflowing the card. */
+  blastCallerPath: {
+    minWidth: 0,
+    overflowWrap: "anywhere",
   } satisfies CSSProperties,
   blastImpactRow: {
     display: "flex",

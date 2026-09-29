@@ -174,9 +174,11 @@ export function BlastRadiusCard({
                           return (
                             <div key={i} style={s.blastCallerRow}>
                               <span style={s.blastCallerPrefix}>↳</span>
-                              <MonoLink href={href}>
-                                {caller.file}:{caller.line}
-                              </MonoLink>
+                              <span style={s.blastCallerPath}>
+                                <MonoLink href={href}>
+                                  {caller.file}:{caller.line}
+                                </MonoLink>
+                              </span>
                             </div>
                           );
                         })
