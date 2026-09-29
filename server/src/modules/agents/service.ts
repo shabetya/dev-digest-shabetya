@@ -136,6 +136,13 @@ export class AgentsService {
     return row ? toAgentVersionDto(row) : undefined;
   }
 
+  /** Ordered attached project-context doc paths, or undefined when the agent isn't in this workspace. */
+  async getContextPaths(workspaceId: string, agentId: string): Promise<string[] | undefined> {
+    const agent = await this.repo.getById(workspaceId, agentId);
+    if (!agent) return undefined;
+    return this.container.contextRepo.agentPaths(agentId);
+  }
+
   /**
    * Replace the agent's attached project-context docs with `paths` (ordered).
    * Paths are validated (422) but need not exist in any repo. Returns the

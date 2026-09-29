@@ -84,6 +84,13 @@ export class SkillsService {
     return row ? toSkillDto(row) : undefined;
   }
 
+  /** Ordered attached project-context doc paths, or undefined when the skill isn't in this workspace. */
+  async getContextPaths(workspaceId: string, skillId: string): Promise<string[] | undefined> {
+    const skill = await this.repo.getById(workspaceId, skillId);
+    if (!skill) return undefined;
+    return this.container.contextRepo.skillPaths(skillId);
+  }
+
   /**
    * Replace the skill's attached project-context docs with `paths` (ordered).
    * Paths are validated (422) but need not exist in any repo. Returns the

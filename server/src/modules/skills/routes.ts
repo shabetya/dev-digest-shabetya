@@ -14,6 +14,7 @@ import { SkillsService } from './service.js';
  *   POST   /skills             → create
  *   PUT    /skills/:id        → update (bumps version on content change)
  *   DELETE /skills/:id        → delete
+ *   GET    /skills/:id/context      → attached project-context doc paths (ordered)
  *   PUT    /skills/:id/context → replace attached project-context doc paths
  *   GET    /skills/:id/versions → body history (newest first)
  *   GET    /skills/:id/stats   → real usage/acceptance numbers (Stats tab)
@@ -90,6 +91,17 @@ export default async function skillsRoutes(appBase: FastifyInstance) {
     if (!ok) throw new NotFoundError('Skill not found');
     return { ok: true };
   });
+
+  app.get(
+    '/skills/:id/context',
+    { schema: { params: IdParams, response: { 200: AttachContextBody } } },
+    async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      const paths = await service.getContextPaths(workspaceId, req.params.id);
+      if (!paths) throw new NotFoundError('Skill not found');
+      return { paths };
+    },
+  );
 
   app.put(
     '/skills/:id/context',
