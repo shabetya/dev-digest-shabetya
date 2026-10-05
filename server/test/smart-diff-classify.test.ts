@@ -5,7 +5,7 @@
  * deliberately overlapping paths that pin that ordering down.
  */
 import { describe, it, expect } from 'vitest';
-import { classifyFile } from '../src/modules/reviews/smart-diff/classify.js';
+import { classifyFile } from '../src/modules/_shared/classify-file.js';
 
 describe('classifyFile — order-sensitivity (deliberate overlaps)', () => {
   it('a snapshot inside __tests__ is boilerplate, not tests — the snapshot rule is checked before the tests rule', () => {

@@ -76,6 +76,7 @@ export function PrDetailView({ repoId, number }: { repoId: string; number: strin
             repoId={repoId}
             repoFullName={page.repoFullName}
             headSha={pr.head_sha}
+            onOpenFile={page.navigateToFile}
           />
         )}
 
@@ -112,6 +113,7 @@ export function PrDetailView({ repoId, number }: { repoId: string; number: strin
             canComment={pr.status === "open"}
             repoFullName={page.repoFullName}
             headSha={pr.head_sha}
+            focus={page.focus}
           />
         )}
       </div>

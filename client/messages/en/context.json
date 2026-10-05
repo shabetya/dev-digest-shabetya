@@ -1,24 +1,47 @@
 {
   "title": "Project Context",
-  "chunks": "{count} chunks",
-  "reindex": "Re-index",
-  "indexing": "Indexing…",
-  "resync": "Resync",
-  "resyncing": "Resyncing…",
-  "indexStatus": "Index status: {status}",
+  "subtitle": "Markdown docs from this repo (PRDs, specs, acceptance criteria). Attach them to an agent or skill on its Context tab to ground its reviews.",
+  "crumb": "Project Context",
   "loadError": "Couldn’t load specs",
   "kb": "{kb}kb",
+  "tokens": "≈ {count} tok",
+  "usedBy": "Used by {count, plural, one {# agent} other {# agents}}",
+  "attached": "Attached",
+  "truncated": "Showing the first {count} docs — the repo has more.",
+  "preview": "Preview",
+  "previewLoadError": "Couldn’t load this doc",
+  "close": "Close",
+  "readOnly": "Read-only",
+  "skipReason": {
+    "too_large": "too large",
+    "empty": "empty",
+    "unreadable": "unreadable"
+  },
   "empty": {
     "title": "No spec files yet",
-    "body": "Drop your PRDs, tech specs, and acceptance criteria under .devdigest/specs/. Every agent and the PR brief read them as grounding context."
+    "body": "Add Markdown docs (PRDs, tech specs, acceptance criteria) to this repo. Attach them to agents or skills to use them as grounding context."
   },
-  "mode": {
-    "preview": "preview",
-    "edit": "edit"
+  "noClone": {
+    "title": "Repo not cloned yet",
+    "body": "Project context is read from the local clone. Sync the repo, then reload this page."
   },
-  "editor": {
-    "loadError": "Couldn’t load spec",
+  "tab": {
+    "title": "Project context",
+    "hint": "Attached docs are injected into the review prompt as untrusted reference material. Drag rows or use the arrows to reorder.",
+    "count": "{attached} of {total} attached",
+    "total": "≈ {count} tokens",
+    "inherited": "inherited from skill",
+    "inheritedHint": "Attached via a linked skill — remove it on that skill.",
+    "notFound": "not found in this repo",
+    "noRepoTitle": "Select a repo to attach context",
+    "noRepoBody": "Project context docs come from a repo. Pick an active repo to attach docs here.",
+    "loadError": "Couldn’t load attached context",
     "save": "Save",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "saved": "Saved",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "drag": "Drag to reorder",
+    "noDocs": "No Markdown docs found in the active repo."
   }
 }

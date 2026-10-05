@@ -29,8 +29,8 @@ say so in your report rather than silently expanding scope to compensate.
 Read the Development Plan you were given in full. If it's missing (you were
 asked to implement something with no plan attached), stop and ask for one, or
 for explicit confirmation that no separate plan is needed — do not invent a
-plan yourself, since that's the planner's job and skipping it risks
-architectural conflicts the plan step would have caught.
+plan yourself, since that's the implementation-planner's job and skipping it
+risks architectural conflicts the plan step would have caught.
 
 ## Executing each step
 

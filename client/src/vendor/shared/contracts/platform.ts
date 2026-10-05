@@ -253,21 +253,40 @@ export const PrCommentInput = z.object({
 export type PrCommentInput = z.infer<typeof PrCommentInput>;
 
 // ---- Project Context ----
+export const SpecFileReason = z.enum(['too_large', 'empty', 'unreadable']);
+export type SpecFileReason = z.infer<typeof SpecFileReason>;
+
 export const SpecFile = z.object({
   path: z.string(),
   content: z.string().nullish(),
   size: z.number().int().nullish(),
   updated_at: z.string().nullish(),
+  /** Token count of the file's content (per-doc, from the list endpoint). */
+  tokens: z.number().int(),
+  /** Top-level folder name; `other` for root-level files. */
+  group: z.string(),
+  /** Number of agents attached to this path (global by path). */
+  used_by_agents: z.number().int(),
+  /** Why the doc can't be injected, when known. */
+  reason: SpecFileReason.nullish(),
 });
 export type SpecFile = z.infer<typeof SpecFile>;
 
-export const IndexStatus = z.object({
-  status: z.enum(['idle', 'cloning', 'parsing', 'embedding', 'done', 'error']),
-  pct: z.number().min(0).max(100),
-  message: z.string().nullish(),
-  chunks_indexed: z.number().int().nullish(),
+/** `GET /repos/:id/context` envelope. */
+export const SpecFileList = z.object({
+  files: z.array(SpecFile),
+  truncated: z.boolean(),
+  reason: z.literal('no_clone').nullish(),
 });
-export type IndexStatus = z.infer<typeof IndexStatus>;
+export type SpecFileList = z.infer<typeof SpecFileList>;
+
+/** `GET /repos/:id/context/preview?path=` response. */
+export const SpecPreview = z.object({ path: z.string(), content: z.string() });
+export type SpecPreview = z.infer<typeof SpecPreview>;
+
+/** `PUT /agents/:id/context` and `PUT /skills/:id/context` body (ordered). */
+export const AttachContextBody = z.object({ paths: z.array(z.string()).max(50) });
+export type AttachContextBody = z.infer<typeof AttachContextBody>;
 
 // ---- Run request (review trigger; owned by A2, contract lives here) ----
 export const RunRequest = z.object({

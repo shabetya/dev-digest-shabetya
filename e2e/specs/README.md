@@ -14,3 +14,8 @@ for the JSON format and the coverage table of what each numbered flow checks.
 To add coverage for a new page/feature, add a new `NN-name.flow.json` here
 (next available number) rather than folding it into an existing flow, unless
 it extends the same page/session state the existing flow already set up.
+
+This folder is **not** where an in-flight design spec for an e2e feature
+goes, unlike `specs/` in the other packages — a spec scoped to `e2e/`
+belongs in the top-level [`specs/`](../../specs/README.md) instead, so it
+never collides with these test files.

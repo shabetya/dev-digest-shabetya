@@ -1,6 +1,6 @@
 import { simpleGit, type SimpleGit } from 'simple-git';
 import { join } from 'node:path';
-import { mkdir, readFile, access, rm } from 'node:fs/promises';
+import { mkdir, readFile, access, rm, readdir, realpath, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import type {
   GitClient,
@@ -11,6 +11,8 @@ import type {
   GitCommit,
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from './diff-parser.js';
+import { EXCLUDED_DIRS, MAX_DOC_BYTES, MAX_LIST_FILES } from './constants.js';
+import { assertMarkdownPath, DocTooLargeError, InvalidMarkdownPathError, isInside } from './markdown-path.js';
 
 /**
  * Depth fetched by `sync()`. Deeper than the shallow clone (CLONE_DEPTH=1) so the
@@ -128,6 +130,45 @@ export class SimpleGitClient implements GitClient {
 
   async readFile(repo: RepoRef, path: string): Promise<string> {
     return readFile(join(this.clonePathFor(repo), path), 'utf8');
+  }
+
+  async listMarkdown(repo: RepoRef): Promise<{ paths: string[]; truncated: boolean }> {
+    const root = this.clonePathFor(repo);
+    const out: string[] = [];
+    let truncated = false;
+    const walk = async (rel: string): Promise<void> => {
+      const entries = await readdir(join(root, rel), { withFileTypes: true });
+      entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+      for (const e of entries) {
+        if (truncated) return;
+        const childRel = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isSymbolicLink()) continue; // never follow links out of the clone
+        if (e.isDirectory()) {
+          if (!EXCLUDED_DIRS.has(e.name) && !EXCLUDED_DIRS.has(childRel)) await walk(childRel);
+        } else if (e.isFile() && e.name.toLowerCase().endsWith('.md')) {
+          if (out.length >= MAX_LIST_FILES) {
+            truncated = true;
+            return;
+          }
+          out.push(childRel);
+        }
+      }
+    };
+    await walk('');
+    return { paths: out.sort(), truncated };
+  }
+
+  async readMarkdown(repo: RepoRef, path: string, maxBytes = MAX_DOC_BYTES): Promise<string> {
+    assertMarkdownPath(path);
+    const root = await realpath(this.clonePathFor(repo));
+    const real = await realpath(join(root, path));
+    if (!isInside(root, real)) {
+      throw new InvalidMarkdownPathError(`path escapes repository: ${path}`);
+    }
+    const st = await stat(real);
+    if (!st.isFile()) throw new InvalidMarkdownPathError(`not a file: ${path}`);
+    if (st.size > maxBytes) throw new DocTooLargeError(`file too large: ${path}`);
+    return readFile(real, 'utf8');
   }
 }
 

@@ -61,3 +61,16 @@ export const agentSkills = pgTable(
   },
   (t) => ({ pk: primaryKey({ columns: [t.agentId, t.skillId] }) }),
 );
+
+/** Repo-relative context docs attached to an agent (PK leads with agent_id, so it doubles as the FK index). */
+export const agentContextDocs = pgTable(
+  'agent_context_docs',
+  {
+    agentId: uuid('agent_id')
+      .notNull()
+      .references(() => agents.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    order: integer('order').notNull().default(0),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.agentId, t.path] }) }),
+);

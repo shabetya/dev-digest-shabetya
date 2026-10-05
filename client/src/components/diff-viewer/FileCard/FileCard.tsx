@@ -10,6 +10,7 @@ import type { FindingRecord } from "@devdigest/shared";
 import type { PrFile } from "@/lib/types";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
 import { parsePatch, type Line } from "../helpers";
+import { fileAnchorId, scrollIntoViewSafe, type DiffFocus } from "../focus";
 import {
   buildThreads,
   findingKey,
@@ -70,6 +71,7 @@ export function FileCard({
   commenting,
   initialOpen,
   findingsApi,
+  focus,
 }: {
   file: PrFile;
   commenting?: DiffCommentApi;
@@ -79,12 +81,30 @@ export function FileCard({
   initialOpen?: boolean;
   /** Smart Diff: this file's findings + the accept/dismiss action wiring. */
   findingsApi?: DiffFindingsApi;
+  /** Deep-link target: when it names this file the card opens, scrolls into
+      view and (if `line` is rendered here) highlights that line. */
+  focus?: DiffFocus | null;
 }) {
   const t = useTranslations("shell");
+  const isFocused = focus?.file === file.path;
+  const focusLine = isFocused ? (focus?.line ?? null) : null;
   const [open, setOpen] = React.useState(
-    initialOpen ?? (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
+    isFocused || (initialOpen ?? (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES)
   );
   const lines = React.useMemo(() => parsePatch(file.patch), [file.patch]);
+  const cardRef = React.useRef<HTMLDivElement>(null);
+
+  // A focus that arrives after mount (URL change) must open an already-mounted card.
+  React.useEffect(() => {
+    if (isFocused) setOpen(true);
+  }, [isFocused, focus?.line]);
+
+  // Scroll the card itself into view when there is no rendered line to land on
+  // (file-only focus, or a line that is not part of this patch).
+  const hasFocusLine = focusLine != null && lines.some((l) => l.kind !== "hunk" && l.kind !== "del" && l.newNo === focusLine);
+  React.useEffect(() => {
+    if (isFocused && open && !hasFocusLine) scrollIntoViewSafe(cardRef.current);
+  }, [isFocused, open, hasFocusLine, focus?.line]);
 
   const fileFindings = React.useMemo(
     () => findingsApi?.findings.filter((f) => f.file === file.path) ?? [],
@@ -117,7 +137,7 @@ export function FileCard({
     : 0;
 
   return (
-    <div style={s.fileCard}>
+    <div style={s.fileCard} id={fileAnchorId(file.path)} ref={cardRef}>
       <div onClick={() => setOpen((o) => !o)} style={s.fileHeader}>
         <Icon.ChevronRight size={13} style={chevronFor(open)} />
         <Icon.FileText size={14} style={s.fileIcon} />
@@ -165,6 +185,7 @@ export function FileCard({
                 commenting={commenting}
                 findings={findingsForLine(ln, matchedFindings)}
                 findingsApi={findingsApi}
+                focused={focusLine != null && ln.kind !== "del" && ln.newNo === focusLine}
               />
             ))
           )}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { SectionLabel } from "@devdigest/ui";
+import { PrBriefCard } from "./PrBriefCard";
 import { IntentCard } from "./IntentCard";
 import { BlastRadiusCard } from "./BlastRadiusCard";
 import { s } from "./styles";
@@ -12,11 +13,14 @@ interface OverviewTabProps {
   repoId: string;
   repoFullName?: string | null;
   headSha?: string | null;
+  /** Open the Files tab focused on a file (and optionally a line). */
+  onOpenFile?: (file: string, line?: number) => void;
 }
 
-export function OverviewTab({ prBody, prId, repoId, repoFullName, headSha }: OverviewTabProps) {
+export function OverviewTab({ prBody, prId, repoId, repoFullName, headSha, onOpenFile }: OverviewTabProps) {
   return (
     <>
+      {prId && <PrBriefCard prId={prId} headSha={headSha} onOpenFile={onOpenFile} />}
       {prBody && (
         <section>
           <SectionLabel icon="MessageSquare">Description</SectionLabel>

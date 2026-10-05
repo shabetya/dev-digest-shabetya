@@ -83,6 +83,15 @@ export const RunStats = z.object({
 });
 export type RunStats = z.infer<typeof RunStats>;
 
+/** Per-doc outcome of project-context injection (AC-18). */
+export const ProjectContextDetail = z.object({
+  path: z.string(),
+  tokens: z.number().int(),
+  status: z.enum(['injected', 'skipped']),
+  reason: z.enum(['too_large', 'empty', 'budget_exceeded', 'unreadable', 'no_clone']).nullish(),
+});
+export type ProjectContextDetail = z.infer<typeof ProjectContextDetail>;
+
 /** The single-document trace stored in `run_traces.trace`. */
 export const RunTrace = z.object({
   config: z.object({
@@ -99,6 +108,8 @@ export const RunTrace = z.object({
       skills that went into this run's prompt; null/absent when none did
       (including traces persisted before this field existed). */
   skills_detail: z.array(SkillPromptDetail).nullish(),
+  /** Per-doc project-context breakdown; absent on traces predating this field. */
+  project_context_detail: z.array(ProjectContextDetail).nullish(),
   tool_calls: z.array(ToolCall),
   raw_output: z.string(),
   memory_pulled: z.array(MemoryPulled),

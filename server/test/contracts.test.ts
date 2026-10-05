@@ -5,6 +5,7 @@ import {
   Intent,
   BlastRadius,
   Risks,
+  PrBrief,
   PrHistory,
   SmartDiff,
   Conformance,
@@ -114,6 +115,31 @@ describe('AI contracts parse fixtures', () => {
     ).not.toThrow();
   });
 
+  it('PrBrief (SPEC-03)', () => {
+    const valid = {
+      summary: 'Adds rate limiting.',
+      risks: [{ title: 't', explanation: 'e', severity: 'high', file_refs: ['a.ts'] }],
+      review_focus: [{ file: 'a.ts', line: 10, reason: 'core change' }],
+      missing: ['intent'],
+      generated_at: '2026-01-01T00:00:00.000Z',
+      generated_for_sha: 'abc',
+      model: 'gpt-4.1',
+      usage: { prompt_tokens: 10, completion_tokens: 5, cost_usd: null },
+    };
+    expect(PrBrief.safeParse(valid).success).toBe(true);
+    expect(PrBrief.safeParse({ ...valid, usage: null }).success).toBe(true);
+    const { summary: _s, ...noSummary } = valid;
+    expect(PrBrief.safeParse(noSummary).success).toBe(false);
+    expect(
+      PrBrief.safeParse({ ...valid, risks: [{ ...valid.risks[0], severity: 'critical' }] }).success,
+    ).toBe(false);
+    expect(
+      PrBrief.safeParse({ ...valid, review_focus: [{ file: 'a.ts', line: 0, reason: 'r' }] }).success,
+    ).toBe(false);
+    // pre-SPEC-03 shape is rejected (treated as "no brief" by the repository)
+    expect(PrBrief.safeParse({ intent: {}, blast: {}, risks: { risks: [] }, history: { history: [] } }).success).toBe(false);
+  });
+
   it('SmartDiff (data.jsx DIFF)', () => {
     const d = SmartDiff.parse({
       groups: [
@@ -138,9 +164,67 @@ describe('AI contracts parse fixtures', () => {
     ).not.toThrow();
     expect(() =>
       Onboarding.parse({
-        sections: [{ kind: 'architecture', title: 'T', body: 'b', links: [] }],
+        version: 1,
+        index_files: 42,
+        generated_at: '2026-01-01T00:00:00.000Z',
+        sections: {
+          architecture: {
+            prose: 'Uses `src/app.ts`.',
+            nodes: [
+              { id: 'web', label: 'Web', kind: 'client' },
+              { id: 'api', label: 'API', kind: 'server', file: 'src/app.ts' },
+            ],
+            edges: [{ from: 'web', to: 'api', label: 'HTTP' }],
+          },
+          critical_paths: [{ path: 'src/app.ts', description: 'entry', callers: 3 }],
+          run_locally: [{ command: 'pnpm install', comment: 'deps' }],
+          reading_path: [{ path: 'src/app.ts', reason: 'start here' }],
+          first_tasks: [{ title: 'Fix', description: 'd', files: ['src/app.ts'] }],
+        },
       }),
     ).not.toThrow();
+    const validTour = () => ({
+      version: 1,
+      index_files: 1,
+      generated_at: '2026-01-01T00:00:00.000Z',
+      sections: {
+        architecture: { prose: '', nodes: [], edges: [] },
+        critical_paths: [],
+        run_locally: [{ command: 'pnpm test' }],
+        reading_path: [],
+        first_tasks: [],
+      },
+    });
+    const bad = (mutate: (t: ReturnType<typeof validTour>) => void) => {
+      const t = validTour();
+      mutate(t);
+      return Onboarding.safeParse(t).success;
+    };
+    expect(bad(() => {})).toBe(true);
+    // unknown version, multi-line / control-char / overlong command, >12 nodes, unknown kind
+    expect(bad((t) => ((t as { version: number }).version = 2))).toBe(false);
+    expect(bad((t) => (t.sections.run_locally[0]!.command = 'a\nb'))).toBe(false);
+    expect(bad((t) => (t.sections.run_locally[0]!.command = 'a\rb'))).toBe(false);
+    expect(bad((t) => (t.sections.run_locally[0]!.command = 'x'.repeat(301)))).toBe(false);
+    expect(
+      bad((t) => {
+        t.sections.architecture.nodes = Array.from({ length: 13 }, (_, i) => ({
+          id: `n${i}`,
+          label: 'n',
+          kind: 'other' as const,
+        })) as never;
+      }),
+    ).toBe(false);
+    expect(
+      bad((t) => {
+        t.sections.architecture.nodes = [{ id: 'a', label: 'a', kind: 'bogus' }] as never;
+      }),
+    ).toBe(false);
+    expect(
+      bad((t) => {
+        t.sections.first_tasks = [{ title: 't', description: 'd', files: [] }] as never;
+      }),
+    ).toBe(false);
     expect(() =>
       EvalRun.parse({
         recall: 0.82,

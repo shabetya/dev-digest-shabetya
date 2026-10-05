@@ -1,8 +1,10 @@
 {
   "block": {
+    "brief": "PR Brief",
     "intent": "Intent",
     "blast": "Blast radius",
-    "risks": "Risks",
+    "risks": "Risk areas",
+    "focus": "Review focus",
     "history": "PR history"
   },
   "noRisks": "No notable risks flagged.",
@@ -10,10 +12,42 @@
   "overlap": "{count} overlap",
   "unavailable": "Brief not available yet.",
   "unavailableHint": "Run a review or open the PR to compute it.",
+  "summary": "Summary",
+  "empty": "No brief yet. Generate one to see what this PR does, what could go wrong and where to start reading.",
+  "generate": "Generate brief",
+  "generating": "Generating…",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing…",
+  "stale": "This brief was generated for an earlier commit of this PR. Refresh to update it.",
+  "loading": "Loading the brief…",
+  "loadError": "Couldn’t load the brief.",
+  "focusHint": "Read in this order. Click an entry to open it in Files changed.",
+  "openFile": "Open {file} in Files changed",
+  "openFileAtLine": "Open {file} at line {line} in Files changed",
+  "missing": {
+    "title": "Not available when this brief was generated:",
+    "intent": "Intent (not computed yet)",
+    "blast": "Blast radius (not computed or repo intelligence is off)",
+    "specs": "Attached project specs (none attached or unreadable)"
+  },
+  "usage": "{cost} · {tokensIn}→{tokensOut}",
+  "severity": {
+    "high": "High severity",
+    "medium": "Medium severity",
+    "low": "Low severity"
+  },
+  "error": {
+    "llm_unavailable": "The language model is unavailable. Check your API key in Settings and try again.",
+    "no_files": "This PR has no changed files, so there is nothing to brief.",
+    "generation_failed": "The brief couldn’t be generated. Try again in a moment.",
+    "generation_in_progress": "A brief is already being generated for this PR. Try again in a moment.",
+    "unknown": "Couldn’t generate the brief: {message}"
+  },
   "why": {
     "title": "git-why",
     "blame": "blame",
     "noHistory": "No history available for this line.",
     "noCommits": "No commits found for this line."
-  }
+  },
+  "usageTokens": "{tokensIn}→{tokensOut}"
 }

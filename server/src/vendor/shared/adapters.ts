@@ -224,6 +224,19 @@ export interface GitClient {
   blame(repo: RepoRef, path: string): Promise<BlameLine[]>;
   log(repo: RepoRef, path?: string): Promise<GitCommit[]>;
   readFile(repo: RepoRef, path: string): Promise<string>;
+  /**
+   * List repo-relative `.md` paths in the clone (excluded dirs skipped, symlinks
+   * not followed), sorted, capped at 500; `truncated` is set when the cap hit.
+   * Rejects when the clone is missing.
+   */
+  listMarkdown(repo: RepoRef): Promise<{ paths: string[]; truncated: boolean }>;
+  /**
+   * Guarded read of a project-context doc: rejects `..`/absolute/non-`.md` paths
+   * and any path whose realpath escapes the clone root (throws
+   * InvalidMarkdownPathError); throws if the file is missing or exceeds
+   * `maxBytes` (default 200 KB). Never truncates.
+   */
+  readMarkdown(repo: RepoRef, path: string, maxBytes?: number): Promise<string>;
   clonePathFor(repo: RepoRef): string;
 }
 
