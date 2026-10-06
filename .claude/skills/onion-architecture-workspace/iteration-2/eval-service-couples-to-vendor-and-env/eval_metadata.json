@@ -1,0 +1,22 @@
+{
+  "eval_id": 2,
+  "eval_name": "service-couples-to-vendor-and-env",
+  "prompt": "I'm about to open a PR for the backend module in /Users/vadymshabetia/dev-digest-shabetya/.claude/skills/onion-architecture/evals/fixtures/notifications/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+  "assertions": [
+    {
+      "text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter"
+    },
+    {
+      "text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider"
+    },
+    {
+      "text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems"
+    },
+    {
+      "text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container"
+    }
+  ]
+}

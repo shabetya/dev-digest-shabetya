@@ -1,7 +1,7 @@
 ---
 name: onion-architecture
-description: "Onion Architecture for the backend (`server/` + `reviewer-core/`). Use when adding or restructuring a server module, deciding where business logic / persistence / adapter code lives, defining a new port or adapter, wiring dependencies, placing validation, choosing transaction boundaries, placing background jobs or streamed run events, deciding where config and secrets are read, or choosing what kind of test to write. Structural decisions only — Fastify mechanics live in `fastify-best-practices`, query idioms in `drizzle-orm-patterns`, schema idioms in `zod`, physical schema design in `postgresql-table-design`."
-version: 1.0.0
+description: "Onion Architecture for the backend (`server/` + `reviewer-core/`). Use when adding or restructuring a server module, deciding where business logic / persistence / adapter code lives, defining a new port or adapter, wiring dependencies, placing validation, choosing transaction boundaries, placing background jobs or streamed run events, deciding where config and secrets are read, where the current time / random ids / logging come from, whether an external call or event may sit inside a transaction, making a job handler retry-safe, or choosing what kind of test to write. Structural decisions only — Fastify mechanics live in `fastify-best-practices`, query idioms in `drizzle-orm-patterns`, schema idioms in `zod`, physical schema design in `postgresql-table-design`."
+version: 1.1.0
 ---
 
 # Onion Architecture (backend)
@@ -173,6 +173,35 @@ Adding a new external tool, in order:
   shared** — construct the repository in the container (as `agentsRepo` and
   `reviewRepo` already are) rather than instantiating it per module.
 
+## Side Effects Around Writes
+
+A transaction protects rows, not the outside world. The failure modes below are
+invisible in a happy-path test and show up as double charges, stuck locks, and
+cross-tenant reads.
+
+- **No network, mail, LLM, or subprocess call inside `db.transaction()`.** The
+  transaction holds a pooled connection and row locks for as long as the remote
+  call takes, and the remote effect cannot be rolled back when the commit fails.
+  Order it one of two ways: do the external call first and persist its result in
+  a short transaction, or persist the *intent* (an outbox row or a `pending`
+  status) inside the transaction and perform the effect after commit.
+- **Emit events after commit, never inside the transaction.** A rollback does
+  not retract a bus event, so subscribers act on state that never existed.
+  Collect the events during the unit of work and publish them once it returns.
+- **A job handler must be safe to run twice.** `platform/jobs.ts` retries, and a
+  crash between "send the email" and "mark it sent" repeats the email on the next
+  run. Claim before acting — flip `pending → sending` with a conditional update
+  that returns the row, and only the winner proceeds — or pass an idempotency key
+  to the adapter so the provider dedupes. Updating state *after* the effect is the
+  pattern that duplicates.
+- **Every read by id carries the tenant.** `getById(id)` is a cross-tenant leak
+  even when the caller "checks the workspace afterwards": the check is one
+  forgotten line away from disappearing. The repository signature is
+  `getById(workspaceId, id)`, and the predicate is in the query.
+- **Scripts and pure code filed under `adapters/` are not violations of the above.**
+  `db/seed*.ts` may read the clock and `console.log`; a pure function under
+  `adapters/` is core logic by behavior (see *Ports & Adapters*).
+
 ## Validation
 
 Two kinds of validation, both mandatory, at different rings:
@@ -212,6 +241,36 @@ Two kinds of validation, both mandatory, at different rings:
 - The codebase should be publishable open-source at any moment without leaking a
   credential — that is the practical test for whether something is config or a
   secret.
+
+## Impure Inputs: Time, Randomness, Logging
+
+The adapter test ("does it leave the process?") classifies the clock, randomness
+and the console as external, so application services and the core do not reach
+for them directly. A service that calls `Date.now()` is a service nobody can
+test around a deadline without fake timers, and one that calls `randomUUID()`
+produces output no assertion can pin down.
+
+- **Time comes from a `Clock` port.** `new Date()`, `Date.now()` and
+  `performance.now()` are banned in `service.ts`, `helpers.ts`, `findings.ts` and
+  `reviewer-core`. Define `Clock { now(): Date }` in `vendor/shared/adapters.ts`,
+  implement `SystemClock` in `adapters/clock/system.ts`, give `adapters/mocks.ts`
+  a `FixedClock`, and wire a lazy getter plus `ContainerOverrides` slot in
+  `platform/container.ts`. Pure helpers take `now` as a plain argument
+  (`isDue(reminder, now)`) rather than a clock object.
+- **Ids and randomness are injected the same way.** `randomUUID()`,
+  `Math.random()` and `crypto.randomBytes` in a service belong behind an
+  `IdGenerator` port (or, for DB-generated ids, in the repository via
+  `defaultRandom()`). The adapters/composition root may call them freely.
+- **Logging goes through the injected logger, never `console.*`.** Use the
+  request-scoped `req.log` in routes and a `Logger` handed to the service by the
+  container. `console.log` bypasses redaction, levels and request correlation, and
+  it is the usual way an email address or token ends up in stdout.
+- **Boundary scripts are exempt.** `db/seed*.ts`, `db/migrate.ts` and one-off CLIs
+  are composition-root territory and may use all three directly.
+- **Nothing in this repo has a `Clock` or `IdGenerator` today** (`platform/jobs.ts`,
+  `platform/sse.ts` and `modules/repos/repository.ts` read the clock directly).
+  Treat this section as prescriptive; add the port when a service you are touching
+  needs time-dependent logic under test, not as a sweeping refactor.
 
 ## Dependency Injection
 
@@ -319,6 +378,7 @@ entries:
 | No cross-module imports | `^src/modules/([^/]+)/` → `^src/modules/([^/]+)/` with `pathNot: ^src/modules/$1/` (allow `_shared/`) |
 | The container is wired, not reached for | anything except `app.ts`, `modules/*/routes.ts`, `modules/*/service.ts` → `platform/container.js` |
 | One env chokepoint | anything except `platform/config.ts`, `adapters/secrets/` → `process.env` |
+| Impure inputs are injected | `modules/*/service.ts`, `helpers.ts`, `reviewer-core/src` → `Date.now`, `new Date()`, `randomUUID`, `console.*` |
 
 Group matching with a `$1` back-reference expresses the cross-module rule in a
 single entry; `reachable: true` covers transitive violations. Add a rule when a

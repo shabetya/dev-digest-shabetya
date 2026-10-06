@@ -1,0 +1,323 @@
+{
+  "metadata": {
+    "skill_name": "onion-architecture",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-06T06:30:46Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 30.4,
+        "tokens": 65513,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)",
+          "passed": true,
+          "evidence": "#1 routes.ts:2,4,5,15,21-24,34-37 direct drizzle queries"
+        },
+        {
+          "text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)",
+          "passed": true,
+          "evidence": "#4 raw rows returned, no response schema"
+        },
+        {
+          "text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts",
+          "passed": true,
+          "evidence": "#3 hand-built 404, use NotFoundError"
+        },
+        {
+          "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+          "passed": true,
+          "evidence": "7 findings; extras (#2,#5,#6,#7) are in-scope, #6 low-priority"
+        },
+        {
+          "text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone",
+          "passed": true,
+          "evidence": "#1 -> repository.ts via container.bookmarksRepo; 'Checked, no problem: getContext is the sanctioned adaptation point'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 47.0,
+        "tokens": 68431,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter",
+          "passed": true,
+          "evidence": "#1 Slack WebClient built in service, no port"
+        },
+        {
+          "text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider",
+          "passed": true,
+          "evidence": "#2 process.env read outside the 2 allowed files; use SecretsProvider"
+        },
+        {
+          "text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)",
+          "passed": true,
+          "evidence": "#3 cross-module import of ../users/service.js"
+        },
+        {
+          "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+          "passed": true,
+          "evidence": "7 findings, #6 is a real config bug, no noise"
+        },
+        {
+          "text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container",
+          "passed": true,
+          "evidence": "#1 port in vendor/shared/adapters.ts + adapters/mocks.ts; #2 secrets.get via container; #3 via container.usersRepo"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 38.3,
+        "tokens": 68205,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction",
+          "passed": true,
+          "evidence": "#1 issue() = 3 writes, no transaction"
+        },
+        {
+          "text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method",
+          "passed": true,
+          "evidence": "#3 late-fee rule inside jobs.register callback"
+        },
+        {
+          "text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double",
+          "passed": true,
+          "evidence": "#5 vi.mock('./repository.js') instead of injection"
+        },
+        {
+          "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+          "passed": true,
+          "evidence": "8 findings, all in-scope architecture/persistence"
+        },
+        {
+          "text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres",
+          "passed": true,
+          "evidence": "#2 tx param to repository; #3 applyLateFees + computeLateFee helper; #5 ContainerOverrides + *.it.test.ts with rollback case"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 45.9,
+        "tokens": 58469,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)",
+          "passed": true,
+          "evidence": "#1 routes query the DB directly"
+        },
+        {
+          "text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)",
+          "passed": true,
+          "evidence": "#4 raw Drizzle rows returned"
+        },
+        {
+          "text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts",
+          "passed": true,
+          "evidence": "#3 ad hoc 404 bypassing NotFoundError"
+        },
+        {
+          "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+          "passed": true,
+          "evidence": "6 findings; only #6 is questionable"
+        },
+        {
+          "text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone",
+          "passed": false,
+          "evidence": "#6 recommends replacing getContext with a hook (contradicts repo convention); invents ports.ts/repository.drizzle.ts and a service layer for a trivial module"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 36.1,
+        "tokens": 58950,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter",
+          "passed": true,
+          "evidence": "#1 vendor SDK in service"
+        },
+        {
+          "text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider",
+          "passed": true,
+          "evidence": "#2 process.env token bypasses container.secrets"
+        },
+        {
+          "text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)",
+          "passed": true,
+          "evidence": "#3 new UsersService per call, cross-module"
+        },
+        {
+          "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+          "passed": false,
+          "evidence": "10 findings: #6 (port for ReviewRepository), #7 (memoize getters), #8, #9 are over-engineering or tangential -> >2 noisy"
+        },
+        {
+          "text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container",
+          "passed": false,
+          "evidence": "cross-module fixed by narrow constructor injection, not via container; no mocks.ts double"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 46.3,
+        "tokens": 60797,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction",
+          "passed": true,
+          "evidence": "#1 3 writes with no transaction"
+        },
+        {
+          "text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method",
+          "passed": true,
+          "evidence": "#4 late-fee rule buried in job closure"
+        },
+        {
+          "text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double",
+          "passed": true,
+          "evidence": "#7 vi.mock of module internals"
+        },
+        {
+          "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+          "passed": false,
+          "evidence": "9 findings; #9 (missing FK in schema) and #8 (N+1) are outside the architecture ask, #5 pushes a new InvoiceStore port"
+        },
+        {
+          "text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres",
+          "passed": false,
+          "evidence": "tx fix OK, job fix OK, but tests -> in-memory fakes of a new port, not ContainerOverrides / *.it.test.ts"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 38.5667,
+        "stddev": 8.3032,
+        "min": 30.4,
+        "max": 47.0
+      },
+      "tokens": {
+        "mean": 67383.0,
+        "stddev": 1623.4051,
+        "min": 65513,
+        "max": 68431
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.6667,
+        "stddev": 0.1155,
+        "min": 0.6,
+        "max": 0.8
+      },
+      "time_seconds": {
+        "mean": 42.7667,
+        "stddev": 5.777,
+        "min": 36.1,
+        "max": 46.3
+      },
+      "tokens": {
+        "mean": 59405.3333,
+        "stddev": 1228.9802,
+        "min": 58469,
+        "max": 60797
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.33",
+      "time_seconds": "-4.2",
+      "tokens": "+7978"
+    }
+  },
+  "notes": []
+}

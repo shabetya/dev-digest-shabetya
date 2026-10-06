@@ -1,0 +1,693 @@
+{
+  "metadata": {
+    "skill_name": "onion-architecture",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-06T06:51:18Z",
+    "evals_run": [
+      5
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 5,
+      "configuration": "new_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 43.4,
+        "tokens": 72576,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "new_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 51.1,
+        "tokens": 73644,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "new_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 46.1,
+        "tokens": 73117,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "new_skill",
+      "run_number": 4,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 46.3,
+        "tokens": 73239,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "new_skill",
+      "run_number": 5,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 47.2,
+        "tokens": 72742,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 50.3,
+        "tokens": 70819,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 44.7,
+        "tokens": 70363,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 62.7,
+        "tokens": 72839,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 4,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 49.1,
+        "tokens": 71260,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 5,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 50.3,
+        "tokens": 71214,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+          "passed": true,
+          "evidence": "service.ts:24-39 charge inside db.transaction"
+        },
+        {
+          "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+          "passed": true,
+          "evidence": "receipt job sends before markReceiptSent, not retry-safe"
+        },
+        {
+          "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+          "passed": true,
+          "evidence": "runBus.emit inside the transaction"
+        },
+        {
+          "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+          "passed": true,
+          "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"
+        },
+        {
+          "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+          "passed": true,
+          "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"
+        },
+        {
+          "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+          "passed": true,
+          "evidence": "raw invoices row returned, no schema.response"
+        },
+        {
+          "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+          "passed": true,
+          "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"
+        },
+        {
+          "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+          "passed": true,
+          "evidence": "amount.ts / Stripe new Date not flagged as layering violation"
+        },
+        {
+          "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)",
+          "passed": true,
+          "evidence": "health/routes.ts not flagged"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "new_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 46.82,
+        "stddev": 2.7815,
+        "min": 43.4,
+        "max": 51.1
+      },
+      "tokens": {
+        "mean": 73063.6,
+        "stddev": 421.8001,
+        "min": 72576,
+        "max": 73644
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 51.42,
+        "stddev": 6.7136,
+        "min": 44.7,
+        "max": 62.7
+      },
+      "tokens": {
+        "mean": 71299.0,
+        "stddev": 933.6544,
+        "min": 70363,
+        "max": 72839
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "-4.6",
+      "tokens": "+1765"
+    }
+  },
+  "notes": []
+}

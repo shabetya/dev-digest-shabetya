@@ -44,11 +44,18 @@ function touched(reClaude, reEvals) {
   return [...names].sort();
 }
 
-const skillNames = touched(
+// EVAL_ALL=1 (manual dispatch): treat every skill/agent folder in evals/ as touched.
+const all = (tier) => {
+  const d = join(EVALS_DIR, tier);
+  return existsSync(d) ? readdirSync(d, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort() : [];
+};
+const everything = Boolean(process.env.EVAL_ALL);
+
+const skillNames = everything ? all("skills") : touched(
   /^\.claude\/skills\/([^/]+)\//,
   /^evals\/skills\/([^/]+)\//,
 );
-const agentNames = touched(
+const agentNames = everything ? all("agents") : touched(
   /^\.claude\/agents\/([^/]+)\.md$/,
   /^evals\/agents\/([^/]+)\//,
 );
@@ -60,7 +67,7 @@ const skippedAgents = agentNames.filter((n) => !hasEvals("agents", n));
 
 // The workflow tier measures the LIVE harness, so anything that changes it re-triggers it:
 // the root or .claude CLAUDE.md, any agent definition, the workflow cases, or the engine itself.
-const runWorkflow = changed.some(
+const runWorkflow = everything || changed.some(
   (f) =>
     f === "CLAUDE.md" ||
     f === ".claude/CLAUDE.md" ||

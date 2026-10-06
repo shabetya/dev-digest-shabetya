@@ -1,0 +1,22 @@
+{
+  "eval_id": 3,
+  "eval_name": "unit-of-work-job-logic-and-test-mocks",
+  "prompt": "I'm about to open a PR for the backend module in /Users/vadymshabetia/dev-digest-shabetya/.claude/skills/onion-architecture/evals/fixtures/invoices/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+  "assertions": [
+    {
+      "text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction"
+    },
+    {
+      "text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method"
+    },
+    {
+      "text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems"
+    },
+    {
+      "text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres"
+    }
+  ]
+}

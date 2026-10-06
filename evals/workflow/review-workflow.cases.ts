@@ -1,63 +1,92 @@
 import type { WorkflowCase } from "../src/index.js";
 
 /**
- * Systemic ("workflow") tier — asserts the real on-disk harness (CLAUDE.md + skills + subagents,
- * loaded via settingSources:["project"]) behaves as documented. Organized by scenario, not by a
- * single artifact, because these behaviors are cross-cutting.
+ * Systemic ("workflow") tier — asserts the real on-disk harness (root CLAUDE.md + nested
+ * server/client CLAUDE.md + skills + subagents, loaded via settingSources:["project"]) behaves as
+ * documented. Every CLAUDE.md is a symlink to AGENTS.md.
  *
- * Budget: 5 Claude sessions total.
- *   - 3 × trace     → 1 session each                      = 3
- *   - 1 × activation pair (positive + near-miss negative) = 2
+ * Budget: 5 Claude sessions total. Scenarios are merged into `trace` cases (one session, every
+ * facet asserted, all misses reported together) — the activation pair stays split because the
+ * near-miss negative is only meaningful in isolation.
  *
- * `trace` folds several assertions into ONE session (cheaper, coarser) and stops early once its
- * evidence is in — so a dispatch-bearing trace never waits out the nested subagent's full run.
+ * Nested CLAUDE.md files are injected by the harness when the agent touches a file in that
+ * folder, so they never appear in filesRead. They are asserted through `expectText`: each fact
+ * below exists ONLY in that file, so a correct answer proves it was loaded.
  */
 export const cases: WorkflowCase[] = [
-  // --- trace (1 session): CLAUDE.md "Read When" routing + subagent dispatch, together -----------
+  // --- session 1: root "Deeper docs — use when" routing, four rows at once -----------------------
   {
     kind: "trace",
-    // Endpoint must NOT already exist, or the model reviews the existing code inline instead of
-    // planning-then-dispatching. GET /reviews/:id/export is genuinely absent from routes.ts.
-    name: "API-route task reads api-contracts AND pulls the architecture-reviewer",
+    name: "root CLAUDE.md routes four tasks to their docs",
     prompt:
-      "Я планую додати НОВИЙ, ще не реалізований ендпоінт GET /reviews/:id/export (віддає ревʼю як " +
-      "markdown). Спершу звірся з конвенціями API цього репо. Потім ОБОВʼЯЗКОВО запусти сабагента " +
-      "architecture-reviewer, щоб він оцінив мій план на відповідність onion-шарам — не рецензуй сам.",
-    expectFilesRead: ["server/docs/api-contracts.md"],
-    expectSubagents: ["architecture-reviewer"],
+      "У мене чотири окремі задачі. Для КОЖНОЇ спершу звірся з CLAUDE.md цього репо, щоб знайти, який документ " +
+      "її стосується, ВІДКРИЙ цей документ (Read) і процитуй з нього один конкретний факт. Код не читай.\n" +
+      "1) Я міняю правила класифікації файлів у Smart Diff (classifyFile).\n" +
+      "2) Я працюю над PR Brief — які причини помилок (error reasons) він повертає.\n" +
+      "3) Я змінюю Project Context — які ліміти розміру та токенів діють на прикріплені документи.\n" +
+      "4) Мені треба вирішити, який тестовий suite потрібен для моєї зміни.",
+    expectFilesRead: ["docs/smart-diff.md", "docs/pr-brief.md", "docs/project-context.md", "TESTING.md"],
+    expectText: ["boilerplate", "generation_in_progress|llm_unavailable", "budget_exceeded|30,?000|200 ?KB"],
+    maxTurns: 14,
+  },
+
+  // --- session 2: nested server/ + client/ CLAUDE.md in ONE task ---------------------------------
+  {
+    kind: "trace",
+    name: "touching server/ and client/ loads both nested CLAUDE.md files",
+    prompt:
+      "Я хочу додати нове поле до відповіді review і показати його в UI. Щоб оцінити, де це робити, " +
+      "відкрий (Read) server/src/modules/index.ts та client/src/lib/api.ts. " +
+      "Потім відповідай ВИКЛЮЧНО за інструкціями (CLAUDE.md/AGENTS.md), що діють для server/ та client/ — " +
+      "цитуй кожне правило майже дослівно, не загальними знаннями про Fastify чи Next.js:\n" +
+      "- server: як маршрут має валідувати вхід, і як має називатись файл тесту, що ходить у справжній Postgres?\n" +
+      "- server: звідки читати секрет на кшталт API-ключа?\n" +
+      "- client: чи можна викликати fetch() прямо з компонента, і де має жити логіка нової фічі?\n" +
+      "- Я змінив спільний Zod-контракт — що саме треба відредагувати?",
+    expectText: [
+      "\\.it\\.test\\.ts", // server/AGENTS.md
+      "SecretsProvider", // server/AGENTS.md
+      "api\\.ts", // client/AGENTS.md (the one place that knows NEXT_PUBLIC_API_BASE)
+      "_components", // client/AGENTS.md
+      "server/src/vendor/shared", // root CLAUDE.md
+      "client/src/vendor/shared", // root CLAUDE.md
+    ],
+    maxTurns: 14,
+  },
+
+  // --- session 3: root Gotchas / Do-not-touch / conventions --------------------------------------
+  {
+    kind: "trace",
+    name: "root CLAUDE.md gotchas and do-not-touch are honored",
+    prompt:
+      "Не відкривай жодних файлів з коду, відповідай за настановами цього репо:\n" +
+      "- Чи просто зупиняє Postgres команда `docker compose down -v`?\n" +
+      "- Після git pull змінилась схема БД, а колонки немає — чому і що робити?\n" +
+      "- Промпт ревʼюера виглядає порожнім без repo skeleton — це баг? Які прапорці перевірити?\n" +
+      "- Я хочу вручну поправити agent-runner/dist/ — це нормально?",
+    expectText: [
+      "devdigest_pgdata|wipes|deletes", // docker -v gotcha
+      "db:migrate",
+      "REPO_INTEL_ENABLED",
+      "EMBEDDINGS_ENABLED",
+      "must match|never.*hand-edit|do not.*edit|не .*редаг|committed", // agent-runner/dist
+    ],
     maxTurns: 8,
   },
 
-  // --- trace (1 session): two "Read When" rows at once -----------------------------------------
+  // --- session 4: leak control — client-only work must NOT pull in server/ rules ------------------
   {
     kind: "trace",
-    // Tests the CLAUDE.md "Read When" routing, so the prompt must push toward CONSULTING the docs,
-    // not exploring source. Earlier phrasing ("розберись, як усе влаштовано") sent the model straight
-    // into schema.ts / pipeline.run.ts and it never opened the routed doc. One anchor doc (pipeline.md)
-    // keeps this a deterministic routing check — asserting two docs in one session is inherently flaky.
-    name: "pipeline task follows CLAUDE.md routing to pipeline.md",
+    name: "client-only task does not leak server-only rules",
     prompt:
-      "Я збираюся змінити review pipeline. Перш ніж торкатися коду — звірся з настановами цього репо " +
-      "(CLAUDE.md) щодо того, яку документацію треба прочитати для змін у pipeline, і прочитай саме ці документи.",
-    expectFilesRead: ["reviewer-core/docs/pipeline.md"],
-    maxTurns: 8,
+      "Відкрий (Read) client/src/lib/api.ts. Відповідай ВИКЛЮЧНО за інструкціями, що діють для client/: " +
+      "як мені отримувати дані з API у новому компоненті?",
+    expectText: ["api\\.ts", "hook"],
+    forbidText: ["SecretsProvider", ".it.test.ts"],
+    maxTurns: 6,
   },
 
-  // --- trace (1 session): CLAUDE.md "Hit unexpected behavior" routing -> gotchas ----------------
-  // Was a contrast case, but the control run (empty tmpdir) could still reach the real repo by
-  // absolute path and read gotchas.md, making the negative flaky. As a single-session trace it
-  // reliably checks the same routing rule: in the real repo, the discovery prompt reads gotchas.md.
-  {
-    kind: "trace",
-    name: "CLAUDE.md routes a gotchas lookup to reviewer-core/insights",
-    prompt:
-      "У reviewer-core я стикнувся з несподіваною поведінкою — щось працює не так, як я очікував. " +
-      "За настановами цього репо, де це вже могло бути задокументовано? Прочитай той файл.",
-    expectFilesRead: ["reviewer-core/insights/gotchas.md"],
-    maxTurns: 5,
-  },
-
-  // --- activation pair (2 sessions): positive + near-miss negative ------------------------------
+  // --- sessions 5-6: activation pair (kept split on purpose) -------------------------------------
   {
     kind: "activation",
     name: "engineering-insights activates on a genuine discovery",
@@ -72,9 +101,12 @@ export const cases: WorkflowCase[] = [
     kind: "activation",
     name: "near-miss negative — explaining the same topic must NOT record an insight",
     prompt:
-      "Поясни, як у pgvector працюють розмірності колонок і чому невідповідність повертає нуль рядків.",
+      "Поясни, як у pgvector працюють розмірності колонок і чому невідповідність повертає нуль рядків. " +
+      "Відповідай із загальних знань, не відкривай файли репо.",
     skill: "engineering-insights",
     shouldActivate: false,
-    maxTurns: 4,
+    // 6, not 4: a model that starts exploring source anyway must not trip error_max_turns, which
+    // fails the case for a reason unrelated to skill activation.
+    maxTurns: 6,
   },
 ];

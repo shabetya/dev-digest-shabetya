@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)",
+      "passed": true,
+      "evidence": "#1 routes query the DB directly"
+    },
+    {
+      "text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)",
+      "passed": true,
+      "evidence": "#4 raw Drizzle rows returned"
+    },
+    {
+      "text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts",
+      "passed": true,
+      "evidence": "#3 ad hoc 404 bypassing NotFoundError"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+      "passed": true,
+      "evidence": "6 findings; only #6 is questionable"
+    },
+    {
+      "text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone",
+      "passed": false,
+      "evidence": "#6 recommends replacing getContext with a hook (contradicts repo convention); invents ports.ts/repository.drizzle.ts and a service layer for a trivial module"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "pass_rate": 0.8
+  }
+}

@@ -65,6 +65,14 @@ export type WorkflowCase =
       expectSubagents?: string[];
       expectSkills?: string[];
       expectFilesRead?: string[];
+      /**
+       * Case-insensitive regex sources that must ALL match the final answer text. Use for facts that
+       * only exist in a nested CLAUDE.md/AGENTS.md — those are harness-injected, not Read calls, so
+       * they never show up in filesRead. Disables the early stop (text only exists at the end).
+       */
+      expectText?: string[];
+      /** Substrings that must NOT appear in the answer (over-loading / leak check). */
+      forbidText?: string[];
       maxTurns?: number;
     };
 
@@ -152,30 +160,39 @@ export function runWorkflowCases(cases: WorkflowCase[]): void {
         const skillEngaged = (p: { skillsInvoked: string[]; filesRead: string[] }, skill: string) =>
           p.skillsInvoked.some((s) => s === skill || s.endsWith(`:${skill}`)) ||
           p.filesRead.some((f) => f.includes(`skills/${skill}/SKILL.md`));
+        const needsText = (c.expectText?.length ?? 0) + (c.forbidText?.length ?? 0) > 0;
         const result = await workflowTask(c.prompt, {
           maxTurns: c.maxTurns,
-          stopWhen: (p) =>
-            subs.every((s) => p.subagents.includes(s)) &&
-            skls.every((s) => skillEngaged(p, s)) &&
-            files.every((f) => p.filesRead.some((r) => r.includes(f))),
+          stopWhen: needsText
+            ? undefined
+            : (p) =>
+                subs.every((s) => p.subagents.includes(s)) &&
+                skls.every((s) => skillEngaged(p, s)) &&
+                files.every((f) => p.filesRead.some((r) => r.includes(f))),
         });
         logTrace(c.name, result);
         try {
-          for (const sub of c.expectSubagents ?? []) {
-            expect(result.subagents, `subagents: ${result.subagents.join(", ")}`).toContain(sub);
+          // Collect EVERY miss, then assert once — a merged session must say which facets failed.
+          const missing: string[] = [];
+          for (const sub of subs) {
+            if (!result.subagents.includes(sub)) missing.push(`subagent ${sub}`);
           }
-          for (const skill of c.expectSkills ?? []) {
-            expect(
-              activated(result, skill),
-              `skill ${skill} not engaged | skills: ${result.skillsInvoked.join(", ")} | reads: ${result.filesRead.join(", ")}`,
-            ).toBe(true);
+          for (const skill of skls) {
+            if (!activated(result, skill)) missing.push(`skill ${skill}`);
           }
-          for (const file of c.expectFilesRead ?? []) {
-            expect(
-              result.filesRead.some((f) => f.includes(file)),
-              `${file} not read | reads: ${result.filesRead.join(", ")}`,
-            ).toBe(true);
+          for (const file of files) {
+            if (!result.filesRead.some((f) => f.includes(file))) missing.push(`read ${file}`);
           }
+          for (const re of c.expectText ?? []) {
+            if (!new RegExp(re, "i").test(result.text)) missing.push(`text /${re}/`);
+          }
+          for (const s of c.forbidText ?? []) {
+            if (result.text.toLowerCase().includes(s.toLowerCase())) missing.push(`forbidden text "${s}"`);
+          }
+          expect(
+            missing,
+            `missing: ${missing.join("; ")} | reads: ${result.filesRead.join(", ")} | subagents: ${result.subagents.join(", ")}`,
+          ).toEqual([]);
           expect(result.isError).toBe(false);
         } finally {
           record(c.name, { result });

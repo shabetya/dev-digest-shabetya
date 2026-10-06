@@ -1,0 +1,115 @@
+{
+  "skill_name": "onion-architecture",
+  "evals": [
+    {
+      "id": 1,
+      "name": "routes-hit-db-directly",
+      "prompt": "I'm about to open a PR for the backend module in evals/fixtures/bookmarks/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+      "expected_output": "Names all three planted problems with file:line and a fix aligned with the repo's onion-architecture conventions",
+      "files": [
+        "evals/fixtures/bookmarks/src/db/schema.ts",
+        "evals/fixtures/bookmarks/src/modules/_shared/context.ts",
+        "evals/fixtures/bookmarks/src/modules/bookmarks/routes.ts",
+        "evals/fixtures/bookmarks/src/platform/errors.ts"
+      ],
+      "expectations": [
+        "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)",
+        "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)",
+        "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts",
+        "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+        "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "service-couples-to-vendor-and-env",
+      "prompt": "I'm about to open a PR for the backend module in evals/fixtures/notifications/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+      "expected_output": "Names all three planted problems with file:line and a fix aligned with the repo's onion-architecture conventions",
+      "files": [
+        "evals/fixtures/notifications/src/adapters/secrets/local.ts",
+        "evals/fixtures/notifications/src/modules/notifications/helpers.ts",
+        "evals/fixtures/notifications/src/modules/notifications/routes.ts",
+        "evals/fixtures/notifications/src/modules/notifications/service.ts",
+        "evals/fixtures/notifications/src/modules/users/service.ts",
+        "evals/fixtures/notifications/src/platform/config.ts",
+        "evals/fixtures/notifications/src/platform/container.ts"
+      ],
+      "expectations": [
+        "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter",
+        "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider",
+        "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)",
+        "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+        "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "unit-of-work-job-logic-and-test-mocks",
+      "prompt": "I'm about to open a PR for the backend module in evals/fixtures/invoices/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+      "expected_output": "Names all three planted problems with file:line and a fix aligned with the repo's onion-architecture conventions",
+      "files": [
+        "evals/fixtures/invoices/src/db/schema.ts",
+        "evals/fixtures/invoices/src/modules/invoices/repository.ts",
+        "evals/fixtures/invoices/src/modules/invoices/routes.ts",
+        "evals/fixtures/invoices/src/modules/invoices/service.test.ts",
+        "evals/fixtures/invoices/src/modules/invoices/service.ts"
+      ],
+      "expectations": [
+        "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction",
+        "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method",
+        "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double",
+        "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+        "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "impure-inputs-time-ids-logging",
+      "prompt": "I'm about to open a PR for the backend module in evals/fixtures/reminders/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+      "expected_output": "Names the three impure-input problems (time, randomness, console logging) with file:line and fixes aligned with the skill's Clock/IdGenerator/Logger guidance",
+      "files": [
+        "evals/fixtures/reminders/src/modules/reminders/helpers.ts",
+        "evals/fixtures/reminders/src/modules/reminders/repository.ts",
+        "evals/fixtures/reminders/src/modules/reminders/routes.ts",
+        "evals/fixtures/reminders/src/modules/reminders/service.ts"
+      ],
+      "expectations": [
+        "Flags the service/helper reading the current time directly (Date.now() in helpers.ts isDue / new Date() in service.ts) instead of an injected Clock / `now` argument",
+        "Flags randomUUID() generated inside RemindersService.create instead of an injected IdGenerator (or DB-side default)",
+        "Flags console.log in RemindersService.dispatchDue instead of an injected logger, noting the user email being logged",
+        "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+        "Fixes name the repo mechanisms: Clock port in vendor/shared/adapters.ts with FixedClock in adapters/mocks.ts wired via container/ContainerOverrides; pure helper takes `now` as an argument"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "hidden-side-effects-billing",
+      "prompt": "I'm about to open a PR for the backend modules in evals/fixtures/billing/ (a Fastify + Drizzle + Postgres API; paths under src/). Review them for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+      "expected_output": "Finds the six planted problems (P1-P6) and does not flag the three legitimate-by-design spots (TRAP-1..3)",
+      "files": [
+        "evals/fixtures/billing/src/adapters/payments/amount.ts",
+        "evals/fixtures/billing/src/adapters/payments/stripe.ts",
+        "evals/fixtures/billing/src/db/schema.ts",
+        "evals/fixtures/billing/src/db/seed.ts",
+        "evals/fixtures/billing/src/modules/_shared/context.ts",
+        "evals/fixtures/billing/src/modules/billing/repository.ts",
+        "evals/fixtures/billing/src/modules/billing/routes.ts",
+        "evals/fixtures/billing/src/modules/billing/service.ts",
+        "evals/fixtures/billing/src/modules/customers/repository.ts",
+        "evals/fixtures/billing/src/modules/health/routes.ts",
+        "evals/fixtures/billing/src/platform/errors.ts"
+      ],
+      "expectations": [
+        "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)",
+        "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)",
+        "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit",
+        "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)",
+        "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)",
+        "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)",
+        "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log",
+        "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter",
+        "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)"
+      ]
+    }
+  ]
+}

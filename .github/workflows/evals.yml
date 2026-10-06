@@ -1,0 +1,175 @@
+# Harness evals (skills / agents / workflow) on OpenRouter, per PR.
+#
+#   .claude/skills/<n>/** or evals/skills/<n>/**   -> evals/skills/<n>
+#   .claude/agents/<n>.md or evals/agents/<n>/**   -> evals/agents/<n>   (+ workflow tier)
+#   CLAUDE.md / any agent / evals/{workflow,src}   -> workflow tier
+#
+# A changed skill/agent with no *.eval.ts is logged as SKIP, never failed
+# (see evals/scripts/ci-detect.mjs).
+#
+# Models (no UI; change in repo Settings -> Variables, or per manual run):
+#   skills + agents : vars.EVAL_MODEL          default deepseek/deepseek-v4-flash
+#   workflow tier   : vars.EVAL_WORKFLOW_MODEL default google/gemini-2.5-flash
+#                     (cheap models that don't dispatch subagents fail it — see evals/README.md)
+# Secret: OPENROUTER_API_KEY. Fork PRs get no secrets, so they are skipped.
+name: evals
+
+on:
+  pull_request:
+    paths:
+      - '.claude/**'
+      - 'CLAUDE.md'
+      - 'evals/**'
+      - '.github/workflows/evals.yml'
+      - '.github/actions/eval-setup/**'
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenRouter slug for skills + agents (blank = repo variable / default)
+        required: false
+      workflow_model:
+        description: OpenRouter slug for the workflow tier (blank = repo variable / default)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EVAL_BACKEND: openrouter
+  OPENROUTER_BASE_URL: http://localhost:4000
+  OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+  TOOLS_MODEL: ${{ inputs.model || vars.EVAL_MODEL || 'deepseek/deepseek-v4-flash' }}
+  WORKFLOW_MODEL: ${{ inputs.workflow_model || vars.EVAL_WORKFLOW_MODEL || 'google/gemini-2.5-flash' }}
+
+jobs:
+  detect:
+    name: detect
+    runs-on: ubuntu-latest
+    # Forks have no secrets -> nothing could run.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      skills: ${{ steps.detect.outputs.skills }}
+      agents: ${{ steps.detect.outputs.agents }}
+      run_workflow: ${{ steps.detect.outputs.run_workflow }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - id: detect
+        env:
+          EVAL_ALL: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -z "$EVAL_ALL" ]; then
+            CHANGED_FILES="$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA")"
+            export CHANGED_FILES
+          fi
+          node evals/scripts/ci-detect.mjs 2>detect.log
+          cat detect.log
+          {
+            echo '### Eval selection'
+            echo '```'
+            cat detect.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if grep -q '^SKIP' detect.log; then
+            grep '^SKIP' detect.log | sed 's/^/::notice title=Evals skipped::/'
+          fi
+
+  skills:
+    name: skill / ${{ matrix.name }}
+    needs: detect
+    if: needs.detect.outputs.skills != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.detect.outputs.skills) }}
+    env:
+      EVAL_MODEL: ${{ inputs.model || vars.EVAL_MODEL || 'deepseek/deepseek-v4-flash' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.model || vars.EVAL_MODEL || 'deepseek/deepseek-v4-flash' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/eval-setup
+      - run: echo "model=$EVAL_MODEL" && pnpm vitest run "skills/${{ matrix.name }}/"
+        working-directory: evals
+      - if: failure()
+        run: docker compose -f proxy/docker-compose.yml logs --tail 100
+        working-directory: evals
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-skill-${{ matrix.name }}
+          path: evals/results/
+          if-no-files-found: ignore
+      - if: always()
+        run: docker compose -f proxy/docker-compose.yml down
+        working-directory: evals
+
+  agents:
+    name: agent / ${{ matrix.name }}
+    needs: detect
+    if: needs.detect.outputs.agents != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2   # tool tiers get rate-limited by OpenRouter under load
+      matrix:
+        name: ${{ fromJSON(needs.detect.outputs.agents) }}
+    env:
+      EVAL_MODEL: ${{ inputs.model || vars.EVAL_MODEL || 'deepseek/deepseek-v4-flash' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.model || vars.EVAL_MODEL || 'deepseek/deepseek-v4-flash' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/eval-setup
+      # Trailing slash: "agents/architecture-reviewer" would also match "...-lite".
+      - run: echo "model=$EVAL_MODEL" && pnpm vitest run --no-file-parallelism "agents/${{ matrix.name }}/"
+        working-directory: evals
+      - if: failure()
+        run: docker compose -f proxy/docker-compose.yml logs --tail 100
+        working-directory: evals
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-agent-${{ matrix.name }}
+          path: evals/results/
+          if-no-files-found: ignore
+      - if: always()
+        run: docker compose -f proxy/docker-compose.yml down
+        working-directory: evals
+
+  workflow:
+    name: workflow
+    needs: detect
+    if: needs.detect.outputs.run_workflow == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true   # report-only until the tier is proven stable on cheap models
+    env:
+      EVAL_MODEL: ${{ inputs.workflow_model || vars.EVAL_WORKFLOW_MODEL || 'google/gemini-2.5-flash' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.workflow_model || vars.EVAL_WORKFLOW_MODEL || 'google/gemini-2.5-flash' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/eval-setup
+      - run: echo "model=$EVAL_MODEL" && pnpm vitest run --no-file-parallelism workflow/
+        working-directory: evals
+      - if: failure()
+        run: docker compose -f proxy/docker-compose.yml logs --tail 100
+        working-directory: evals
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-workflow
+          path: evals/results/
+          if-no-files-found: ignore
+      - if: always()
+        run: docker compose -f proxy/docker-compose.yml down
+        working-directory: evals

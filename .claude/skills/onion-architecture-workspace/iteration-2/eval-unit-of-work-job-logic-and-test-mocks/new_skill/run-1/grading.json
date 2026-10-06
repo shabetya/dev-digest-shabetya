@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction",
+      "passed": true,
+      "evidence": "#1 three writes, no transaction"
+    },
+    {
+      "text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method",
+      "passed": true,
+      "evidence": "#3 job handler holds business logic"
+    },
+    {
+      "text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double",
+      "passed": true,
+      "evidence": "#7 vi.mock('./repository.js')"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+      "passed": true,
+      "evidence": "10 findings; #6, #10 flagged low confidence/low severity"
+    },
+    {
+      "text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres",
+      "passed": true,
+      "evidence": "same mechanisms; #5 adds Clock port with SystemClock/FixedClock"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

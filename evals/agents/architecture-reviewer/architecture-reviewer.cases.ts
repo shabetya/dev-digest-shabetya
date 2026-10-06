@@ -3,7 +3,8 @@ import { fixtureReader } from "../../src/index.js";
 
 const fx = fixtureReader(import.meta.url);
 
-const REVIEW_PROMPT = `Audit this diff against DevDigest's documented structural contracts.
+const REVIEW_PROMPT = `Audit this diff against DevDigest's documented structural contracts. The diff below is the complete
+scope; review it as given (the files may not exist on disk yet).
 
 ${fx("checkout-service.diff")}`;
 
@@ -14,7 +15,8 @@ ${fx("checkout-service.diff")}`;
 // but only the strict variant (which keeps the "cite the exact documented rule per finding" hard
 // rule) should reliably emit the identifier. The checkout diff's textbook violations don't
 // discriminate — the model volunteers `inward-only-dependencies`/`di-discipline` either way.
-const REVIEWER_CORE_PROMPT = `Audit this diff against DevDigest's documented structural contracts.
+const REVIEWER_CORE_PROMPT = `Audit this diff against DevDigest's documented structural contracts. The diff below is the complete
+scope; review it as given (the files may not exist on disk yet).
 
 ${fx("reviewer-core-gate.diff")}`;
 
@@ -23,7 +25,8 @@ ${fx("reviewer-core-gate.diff")}`;
 // surfaces the COST of relaxing the citation rule: freed from "every finding must name a
 // documented contract", the lite variant is more prone to fabricating a judgment/best-practice
 // finding where the strict variant stays silent.
-const BENIGN_PROMPT = `Audit this diff against DevDigest's documented structural contracts.
+const BENIGN_PROMPT = `Audit this diff against DevDigest's documented structural contracts. The diff below is the complete
+scope; review it as given (the files may not exist on disk yet).
 
 ${fx("benign-refactor.diff")}`;
 
@@ -47,12 +50,13 @@ export const cases: AgentCase[] = [
     maxTurns: 25,
   },
   {
-    name: "does not fabricate an architecture finding for the out-of-scope security-shaped change",
+    name: "stays scoped to documented rules and reports one finding per root cause",
     kind: "quality",
     prompt: REVIEW_PROMPT,
     practices: [
-      "does not invent an architecture-contract violation for the optional `reply?: FastifyReply` parameter beyond the inward-only-dependencies import issue itself (no runtime bug/security finding fabricated as an architecture rule)",
-      "stays scoped to structural/layering/DI findings and does not comment on naming, style, or test coverage",
+      "does not file the `FastifyReply` import and the `reply?: FastifyReply` parameter as two separate findings — at most ONE finding covers them, and it is tagged inward-only-dependencies (not thin-routes or any other rule)",
+      "contains no finding whose own description concedes the flagged line is fine or merely restates another finding",
+      "does not raise findings about naming, style, test coverage, module folder structure, a missing routes.ts, or runtime/security bugs — only documented structural/layering/DI rules",
     ],
     threshold: 1.0,
     maxTurns: 25,
