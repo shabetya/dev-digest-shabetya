@@ -130,3 +130,5 @@ total raw/gzip, кількість chunks, топ-5 chunks. Або "не зіб�
 - Не правь `package.json`, lockfile-и, `vendor/`, `dist/`, `clones/`.
 - Не вигадуй цифр: усе в звіті має йти з JSON скрипта або з виконаної тобою
   перевірки; якщо не виміряно — так і пиши.
+
+<!-- CI test: touch skill -->
