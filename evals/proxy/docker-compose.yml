@@ -17,6 +17,9 @@ services:
       - "4000:4000"
     environment:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY in the environment}
+      # Newer LiteLLM images refuse to boot without a master key. This gateway is an ephemeral
+      # local/CI container on localhost by design (see litellm.config.yaml), so opt out explicitly.
+      LITELLM_DANGEROUSLY_PERMIT_WEAK_OR_UNSET_MASTER_KEY: "true"
     volumes:
       - ./litellm.config.yaml:/app/config.yaml:ro
     command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
