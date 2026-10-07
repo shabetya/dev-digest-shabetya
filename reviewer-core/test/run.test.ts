@@ -64,6 +64,8 @@ describe('reviewPullRequest (engine)', () => {
     expect(outcome.review.findings).toHaveLength(1);
     expect(outcome.review.findings[0]!.start_line).toBe(11);
     expect(outcome.dropped).toHaveLength(1);
+    // Pre-gate count = kept + dropped (citation-accuracy denominator).
+    expect(outcome.preGroundingCount).toBe(2);
     // Score is derived from the SURVIVING findings, not the model's self-reported
     // 38: one CRITICAL remains after grounding ⇒ 100 − 35 = 65.
     expect(outcome.review.score).toBe(65);

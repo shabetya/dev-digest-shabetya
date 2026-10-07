@@ -5,6 +5,12 @@ import type { FindingRecord } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 import { FindingCard } from "./FindingCard";
 
+// FindingCard embeds the "Turn into eval case" button (SPEC-04); stub its hook so
+// these renders don't need a QueryClient.
+vi.mock("../../../../../../../lib/hooks/eval", () => ({
+  useTurnIntoEvalCase: () => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false }),
+}));
+
 afterEach(cleanup);
 
 const FINDING: FindingRecord = {
@@ -47,6 +53,11 @@ describe("FindingCard (smoke, both themes)", () => {
       // category label is shown alongside the severity badge
       expect(screen.getByText("security")).toBeInTheDocument();
     });
+  });
+
+  it("offers 'Turn into eval case' on the expanded card (shared by Findings tab, Diff tab and Review runs)", () => {
+    renderWithIntl(<FindingCard f={FINDING} defaultExpanded onAction={() => {}} />);
+    expect(screen.getByRole("button", { name: /turn into eval case/i })).toBeInTheDocument();
   });
 
   it("fires accept/dismiss actions", () => {

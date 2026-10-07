@@ -18,6 +18,12 @@ vi.mock("../../../../../../../lib/hooks/reviews", () => ({
 import type { DiffFocus } from "@/components/diff-viewer";
 import { DiffTab } from "./DiffTab";
 
+// FindingCard embeds the "Turn into eval case" button (SPEC-04); stub its hook so
+// these renders don't need a QueryClient.
+vi.mock("../../../../../../../lib/hooks/eval", () => ({
+  useTurnIntoEvalCase: () => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false }),
+}));
+
 afterEach(cleanup);
 
 // One file per role, in Smart Diff's fixed display order. All well under the

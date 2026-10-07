@@ -42,7 +42,9 @@
     "inputLabel": "Input",
     "tabs": {
       "diff": "Diff",
-      "prMeta": "PR meta"
+      "prMeta": "PR meta",
+      "files": "Files",
+      "meta": "PR meta"
     },
     "diffPlaceholder": "--- a/src/config.ts\n+++ b/src/config.ts\n@@ -10,6 +10,7 @@\n+  stripeKey: \"sk_live_...\"",
     "titleLabel": "Title",
@@ -55,13 +57,32 @@
     "invalidJson": "invalid JSON",
     "lastRunPassed": "Last run passed",
     "lastRunFailed": "Last run failed",
-    "resultSummary": "recall {recall}% · precision {precision}% · citation {citation}% · {duration}s"
+    "resultSummary": "recall {recall} · precision {precision} · citation {citation} · {duration}s",
+    "filesPlaceholder": "[\"src/config.ts\"]",
+    "expectationLabel": "Expectation",
+    "expectation": {
+      "must_find": "Must find",
+      "must_not_flag": "Must not flag"
+    },
+    "skeleton": "Finding skeleton",
+    "hint": {
+      "must_find": "The agent must report a finding on each listed file and line range.",
+      "must_not_flag": "The agent must not report a finding on the listed ranges. Note: this also penalises a later, correct finding on the same lines — edit the range if that happens. An empty list [] means the agent must report nothing on this input."
+    },
+    "errors": {
+      "filesJson": "Files must be valid JSON.",
+      "shape": "Expected output doesn’t match the expected shape. {message}",
+      "llm_unavailable": "No LLM key is configured for this agent's provider. Add one in Settings → API Keys.",
+      "generic": "Something went wrong. Try again."
+    },
+    "runOnSave": "Run on save",
+    "lastRunError": "Last run errored"
   },
   "evalsTab": {
     "metricsTitle": "Eval metrics",
     "metricsSubtitle": "Recall / Precision / Citation for this agent's eval cases",
     "casesHeading": "Eval cases",
-    "newCase": "New case",
+    "newCase": "New eval case",
     "loadingCases": "Loading cases…",
     "emptyCases": "No eval cases yet. Create one to assert this agent's expected findings on a sample diff.",
     "neverRun": "never run",
@@ -71,7 +92,34 @@
     "run": "Run",
     "running": "Running…",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "viewDashboard": "View full dashboard →",
+    "tracesPassed": "Traces passed",
+    "passingSummary": "{passing} / {total} passing",
+    "runAll": "Run all evals",
+    "runningAll": "Running…",
+    "progress": "{done} of {total} cases finished…",
+    "loadError": "Could not load the eval cases.",
+    "emptyTitle": "No eval cases yet",
+    "runError": "Could not run this case.",
+    "status": {
+      "passed": "passed",
+      "failed": "failed",
+      "error": "error",
+      "never_run": "never run"
+    },
+    "emptyChip": "empty []",
+    "invalidCase": "invalid case",
+    "editedSinceRun": "edited since last run",
+    "expectedVsGot": "expected {expected, plural, one {# finding} other {# findings}}, got {got}",
+    "runNamed": "Run case {name}",
+    "editNamed": "Edit case {name}",
+    "deleteNamed": "Delete case {name}",
+    "confirmDelete": "Delete eval case “{name}”? Its run results are deleted too.",
+    "startErrors": {
+      "no_cases": "This agent has no runnable eval cases yet.",
+      "suite_running": "An eval run is already in progress for this agent."
+    }
   },
   "page": {
     "crumbSkillsLab": "Skills Lab",
@@ -80,5 +128,90 @@
     "crumbEvals": "Evals",
     "crumbNewCase": "New case",
     "crumbEvalCase": "Eval case"
+  },
+  "common": {
+    "pts": "{value} pts",
+    "suiteFailed": {
+      "llm_unavailable": "The eval run could not start: no LLM key is configured for this agent's provider. Add one in Settings → API Keys, then run again.",
+      "stale": "The last eval run was interrupted (the server restarted mid-run) and was marked failed. Run it again.",
+      "generic": "The last eval run failed. Run it again."
+    }
+  },
+  "workspace": {
+    "subtitle": "Latest recall, precision and citation accuracy for every agent's eval cases.",
+    "runAll": "Run all agents",
+    "running": "Running",
+    "confirmRunAll": "Run {agents, plural, one {# agent} other {# agents}} with {cases, plural, one {# case} other {# cases}} in total? This calls the model for every case and costs tokens.",
+    "runAllResult": "Started {started, plural, one {# run} other {# runs}}; {running} already running; {failed} failed to start.",
+    "noCasesList": "No cases (skipped): {names}",
+    "runFailed": "failed to start",
+    "loadError": "Could not load the eval dashboard.",
+    "noAgentsTitle": "No agents yet",
+    "noAgentsBody": "Create an agent and add eval cases to track its quality here.",
+    "lastRun": "v{version} · {at} · {passed}/{total} passed",
+    "neverRun": "{cases, plural, one {# case} other {# cases}} · never run",
+    "noCases": "no cases",
+    "recentRuns": "Recent eval runs · all agents",
+    "noRuns": "No eval runs yet. Run an agent's eval cases to see results here."
+  },
+  "runsTable": {
+    "agent": "Agent",
+    "version": "Version",
+    "ranAt": "Ran at",
+    "status": "Status",
+    "recall": "Recall",
+    "precision": "Precision",
+    "citation": "Citation",
+    "pass": "Pass",
+    "cost": "Cost",
+    "statuses": {
+      "running": "running",
+      "completed": "completed",
+      "failed": "failed"
+    }
+  },
+  "agentPage": {
+    "back": "← Eval Dashboard",
+    "switchAgent": "Switch agent",
+    "window": "History window",
+    "windowDays": "{count, plural, one {# day} other {# days}}",
+    "select": "Select for compare",
+    "selectRun": "Select run v{version} from {at} for compare",
+    "compare": "Compare",
+    "loadAgentError": "Couldn’t load this agent",
+    "loadAgentErrorBody": "The agent could not be loaded.",
+    "loadError": "Could not load this agent's eval dashboard.",
+    "notEnoughRuns": "Run the eval at least twice to see a trend. The table below lists every run.",
+    "noRunsTitle": "No runs in this window"
+  },
+  "compare": {
+    "title": "Compare runs",
+    "subtitle": "v{a} → v{b}",
+    "loadError": "Could not load this comparison.",
+    "metrics": "Metrics",
+    "metric": "Metric",
+    "delta": "Change",
+    "labels": {
+      "recall": "Recall",
+      "precision": "Precision",
+      "citation_accuracy": "Citation accuracy",
+      "cost": "Cost"
+    },
+    "promptDiff": "System prompt diff",
+    "diffMark": {
+      "same": "unchanged line",
+      "add": "added line",
+      "del": "removed line"
+    },
+    "cases": "Case changes",
+    "fixed": "Fixed",
+    "regressed": "Regressed",
+    "none": "None",
+    "onlyInA": "Only in v{version}",
+    "onlyInB": "Only in v{version}",
+    "promote": "Promote v{version}",
+    "confirmPromote": "Promote v{version}? This re-applies that run's config (prompt, model, skills) to the agent and creates a new agent version.",
+    "promoted": "Promoted. The agent now uses this config.",
+    "promoteError": "Could not promote this version."
   }
 }

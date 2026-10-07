@@ -124,10 +124,12 @@ export const EvalPerTrace = z.object({
 });
 export type EvalPerTrace = z.infer<typeof EvalPerTrace>;
 
+// Metric fields are nullable: AC-19..21 define "no data" (no expectations / no
+// findings / nothing emitted) as null, not 0.
 export const EvalRun = z.object({
-  recall: z.number().min(0).max(1),
-  precision: z.number().min(0).max(1),
-  citation_accuracy: z.number().min(0).max(1),
+  recall: z.number().min(0).max(1).nullable(),
+  precision: z.number().min(0).max(1).nullable(),
+  citation_accuracy: z.number().min(0).max(1).nullable(),
   traces_passed: z.number().int(),
   traces_total: z.number().int(),
   duration_ms: z.number().int(),
@@ -139,17 +141,60 @@ export type EvalRun = z.infer<typeof EvalRun>;
 export const EvalOwnerKind = z.enum(['skill', 'agent']);
 export type EvalOwnerKind = z.infer<typeof EvalOwnerKind>;
 
-export const EvalCase = z.object({
-  id: z.string(),
-  owner_kind: EvalOwnerKind,
-  owner_id: z.string(),
-  name: z.string(),
-  input_diff: z.string(),
-  input_files: z.unknown(),
-  input_meta: z.unknown(),
-  expected_output: z.unknown(),
-  notes: z.string().nullish(),
+// What the agent is required to do on a case's frozen input. Derived server-side
+// from accept (must_find) / dismiss (must_not_flag) when created from a finding.
+export const EvalExpectationType = z.enum(['must_find', 'must_not_flag']);
+export type EvalExpectationType = z.infer<typeof EvalExpectationType>;
+
+// One expected (or forbidden) finding location. Severity/category/title are
+// informational only — matching is file + inclusive line-range overlap.
+export const EvalExpectation = z.object({
+  file: z.string().min(1),
+  start_line: z.number().int().min(1),
+  end_line: z.number().int().min(1).nullish(),
+  severity: z.enum(['CRITICAL', 'WARNING', 'SUGGESTION']).nullish(),
+  category: z.enum(['bug', 'security', 'perf', 'style', 'test']).nullish(),
+  title: z.string().nullish(),
 });
+export type EvalExpectation = z.infer<typeof EvalExpectation>;
+
+export const EvalExpectationList = z.array(EvalExpectation);
+export type EvalExpectationList = z.infer<typeof EvalExpectationList>;
+
+/**
+ * Cross-field rule shared by case read/write schemas: an empty expectation list
+ * ("agent must produce no findings") is valid only for `must_not_flag`.
+ */
+export function refineExpectationList(
+  v: { expectation: EvalExpectationType; expected_output: EvalExpectation[] },
+  ctx: z.RefinementCtx,
+): void {
+  if (v.expectation === 'must_find' && v.expected_output.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['expected_output'],
+      message: 'must_find requires at least one expected item',
+    });
+  }
+}
+
+export const EvalCase = z
+  .object({
+    id: z.string(),
+    owner_kind: EvalOwnerKind,
+    owner_id: z.string(),
+    name: z.string(),
+    input_diff: z.string(),
+    input_files: z.unknown(),
+    input_meta: z.unknown(),
+    expectation: EvalExpectationType,
+    expected_output: EvalExpectationList,
+    source_finding_id: z.string().nullable(),
+    notes: z.string().nullish(),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .superRefine(refineExpectationList);
 export type EvalCase = z.infer<typeof EvalCase>;
 
 // ---- Memory ----
@@ -313,3 +358,28 @@ export const AgentSkillLink = z.object({
   order: z.number().int(),
 });
 export type AgentSkillLink = z.infer<typeof AgentSkillLink>;
+
+// The immutable config snapshot captured in `agent_versions` whenever an agent's
+// config changes (everything but `enabled`). Mirrors the shape written by the
+// agents repository — provider/model/prompt/output_schema/strategy/gate/repo_intel
+// plus the ordered skill ids linked at snapshot time. Used for reproducibility
+// (eval replays a past version) and for surfacing an agent's edit history.
+export const AgentVersionConfig = z.object({
+  provider: Provider,
+  model: z.string(),
+  system_prompt: z.string(),
+  output_schema: z.unknown().nullish(),
+  strategy: ReviewStrategy,
+  ci_fail_on: CiFailOn,
+  repo_intel: z.boolean(),
+  skills: z.array(z.string()),
+});
+export type AgentVersionConfig = z.infer<typeof AgentVersionConfig>;
+
+export const AgentVersion = z.object({
+  agent_id: z.string(),
+  version: z.number().int(),
+  config: AgentVersionConfig,
+  created_at: z.string(),
+});
+export type AgentVersion = z.infer<typeof AgentVersion>;
