@@ -1,4 +1,4 @@
-# Plan: Eval Pipeline  |  Plan for SPEC-04 ([eval-pipeline.md](eval-pipeline.md))  |  Status: implemented
+# Plan: Eval Pipeline  |  Plan for SPEC-04 ([SPEC-04-eval-pipeline.md](SPEC-04-eval-pipeline.md))  |  Status: implemented
 
 Defaults approved by the user: undecided finding → button disabled; background run + client polling; unlabelled findings neutral in precision; Promote vX in scope; alert 2 pts, window 30 days; scoring in `server/src/modules/eval/scoring.ts`; case attaches to `reviews.agent_id` only.
 

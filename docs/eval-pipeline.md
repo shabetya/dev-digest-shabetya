@@ -1,6 +1,6 @@
 # Eval Pipeline — regression tests for review agents
 
-Spec: [specs/eval-pipeline.md](../specs/eval-pipeline.md) (SPEC-04) · Plan: [specs/PLAN-04-eval-pipeline.md](../specs/PLAN-04-eval-pipeline.md)
+Spec: [specs/SPEC-04-eval-pipeline.md](../specs/SPEC-04-eval-pipeline.md) (SPEC-04) · Plan: [specs/PLAN-04-eval-pipeline.md](../specs/PLAN-04-eval-pipeline.md)
 
 Change an agent's system prompt, model or linked skills → run its test set → read recall / precision /
 citation accuracy → decide whether the change broke or improved the agent. Cases live in Postgres next to
