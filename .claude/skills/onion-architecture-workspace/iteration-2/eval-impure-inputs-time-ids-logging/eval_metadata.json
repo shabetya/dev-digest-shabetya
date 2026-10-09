@@ -1,0 +1,22 @@
+{
+  "eval_id": 4,
+  "eval_name": "impure-inputs-time-ids-logging",
+  "prompt": "I'm about to open a PR for the backend module in /Users/vadymshabetia/dev-digest-shabetya/.claude/skills/onion-architecture/evals/fixtures/reminders/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+  "assertions": [
+    {
+      "text": "Flags the service/helper reading the current time directly (Date.now() in helpers.ts isDue / new Date() in service.ts) instead of an injected Clock / `now` argument"
+    },
+    {
+      "text": "Flags randomUUID() generated inside RemindersService.create instead of an injected IdGenerator (or DB-side default)"
+    },
+    {
+      "text": "Flags console.log in RemindersService.dispatchDue instead of an injected logger, noting the user email being logged"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems"
+    },
+    {
+      "text": "Fixes name the repo mechanisms: Clock port in vendor/shared/adapters.ts with FixedClock in adapters/mocks.ts wired via container/ContainerOverrides; pure helper takes `now` as an argument"
+    }
+  ]
+}

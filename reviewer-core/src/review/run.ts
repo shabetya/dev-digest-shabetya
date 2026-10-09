@@ -113,6 +113,12 @@ export interface ReviewOutcome {
   grounding: string;
   /** Findings dropped by grounding, with reasons (for logs / "never go silent"). */
   dropped: { finding: Finding; reason: string }[];
+  /**
+   * Findings the model emitted BEFORE the grounding gate (`kept + dropped`) —
+   * the denominator of citation accuracy. Counted at the gate itself, so it is
+   * exact even when the optional intent-scope gate later removes findings.
+   */
+  preGroundingCount: number;
   /** Which path ran. */
   mode: ReviewMode;
   /** Prompt assembly (for the run trace). Single-pass: the one call; map-reduce: the whole-diff assembly. */
@@ -274,6 +280,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     review: { ...merged, findings: finalFindings, score: scoreFromFindings(finalFindings) },
     grounding,
     dropped: ground.dropped,
+    preGroundingCount: ground.kept.length + ground.dropped.length,
     mode,
     assembly,
     chunks: chunks.map((c) => ({ label: c.label })),

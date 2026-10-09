@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "onion-architecture", "runs": [{"id": "eval-routes-hit-db-directly-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: bookmarks module\n\nPaths relative to `fixtures/bookmarks/`. Module is at \"routes-only\" stage, but `routes.ts` queries the DB directly, which is a violation at any stage.\n\n1. **`src/modules/bookmarks/routes.ts:2,4,5,15,21-24,34-37` - Routes query the database directly (transport depends on persistence).**\n   The handler file imports `drizzle-orm`, the `db` singleton and `db/schema`, and runs select/insert inline. This is the \"Transport never queries\" rule; the DB import must live in exactly one place.\n   Fix: add `src/modules/bookmarks/repository.ts` (domain-shaped methods such as `listForWorkspace(workspaceId)`, `findById(workspaceId, id)`, `create(workspaceId, input)`). Move all drizzle/schema imports there. Routes call it. A thin repository is enough; a service is only needed once a business rule appears.\n\n2. **`src/modules/bookmarks/routes.ts:4` - `db` is imported as a module-level global rather than injected.**\n   Bypasses the composition root, so tests cannot inject a fake and must mock the module. Fix: the repository takes the DB handle in its constructor; construct it in `platform/container.ts` (lazy getter, plus a `ContainerOverrides` slot). Routes use `container.bookmarksRepo`.\n\n3. **`src/modules/bookmarks/routes.ts:25-27` - Handler hand-builds the error response.**\n   `reply.code(404).send({ ok: false, message: ... })` duplicates the status-code decision and invents an error shape. `NotFoundError` already exists in `platform/errors.ts` and is unused.\n   Fix: `throw new NotFoundError('bookmark')` (from the repository's null result) and let the single error handler in `app.ts` map it. Drop the `reply` parameter.\n\n4. **`src/modules/bookmarks/routes.ts:15,28,38` - Raw Drizzle rows are returned as the API response; no `schema.response`.**\n   The wire contract mirrors the physical table (`workspaceId`, `createdAt` Date, any future column leaks automatically). A column rename becomes a breaking API change and there is no output allowlist.\n   Fix: define a `BookmarkDto` zod schema (contract type), add `toBookmarkDto(row)` in `modules/bookmarks/helpers.ts`, map at the edge, and declare `schema.response` on all three routes. Drizzle `$inferSelect` types stop at the repository boundary.\n\n5. **`src/modules/bookmarks/routes.ts:20,33` - Params/body are validated by schema but typed with unchecked casts (`req.params as z.infer<...>`, `req.body as ...`).**\n   The schema is passed as a zod object with no evidence that `fastify-type-provider-zod` validator/serializer compilers are in use here, and the casts discard type safety, so the schema and handler type can silently drift.\n   Fix: register the route with the zod type provider (`app.withTypeProvider<ZodTypeProvider>()`) so `req.params` / `req.body` are inferred from `schema`, and remove the `as` casts. (Verify the compilers are set in `app.ts`, which is outside this fixture.)\n\n6. **`src/modules/bookmarks/routes.ts:9-10` - Request schemas are defined inline in the routes file.**\n   Minor: transport contracts should be the shared Zod contracts (`@devdigest/shared`, vendored in both server and client) so the client and server share one source of truth. Fix: move `CreateBody` / `Params` / the DTO into the shared contracts (edit both vendored copies by hand), or at least into the module's `types.ts`. Low priority.\n\n7. **`src/modules/bookmarks/routes.ts:21-24` and `src/db/schema.ts:5` - Workspace scoping is correct in routes (`getContext` then `workspaceId` in every query), but only because each handler remembers to add it.**\n   Once the repository exists (finding 1), make `workspaceId` a required first parameter of every repository method so tenancy cannot be omitted by a future handler. This is a hardening note rather than a current bug; every query here is correctly scoped.\n\n## Checked, no problem\n- `src/modules/_shared/context.ts`: `getContext` taking `FastifyRequest` is the one sanctioned adaptation point; it resolves tenancy through `container.auth`. Fine.\n- `src/platform/errors.ts`: fine (note `ValidationError` has no constructor/message handling but that is not a layering issue).\n- No service layer is needed yet: there are no business rules. Do not add a pass-through `service.ts`; promote to one when a rule or second caller appears. No transaction is needed (each operation is a single statement).\n- No `process.env` reads and no adapters in this module.\n"}], "grading": {"expectations": [{"text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)", "passed": true, "evidence": "#1 routes.ts:2,4,5,15,21-24,34-37 direct drizzle queries"}, {"text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)", "passed": true, "evidence": "#4 raw rows returned, no response schema"}, {"text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts", "passed": true, "evidence": "#3 hand-built 404, use NotFoundError"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "7 findings; extras (#2,#5,#6,#7) are in-scope, #6 low-priority"}, {"text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone", "passed": true, "evidence": "#1 -> repository.ts via container.bookmarksRepo; 'Checked, no problem: getContext is the sanctioned adaptation point'"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "eval-routes-hit-db-directly-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture findings: bookmarks module\n\nNote: routes.ts imports ../../db/client.js and ../../platform/container.js, which are not in the fixture; not checked.\n\n1. **routes.ts:4-5, 15, 21-24, 34-37 - Routes query the database directly.** Handlers call db.select()/db.insert() with Drizzle operators and the table object; persistence, workspace scoping and not-found logic live in the HTTP adapter. No service, no repository. Fix: add bookmarks/service.ts (list/get/create), a BookmarkRepository port (ports.ts) and a Drizzle implementation (repository.drizzle.ts, the only file importing drizzle-orm and db/schema). Routes only parse input, call the service, shape the response.\n\n2. **routes.ts:4 - Global `db` singleton instead of injected dependency.** The container is passed in but unused for data access; tests need real Postgres or module mocking; no seam for transactions. Fix: wire repository and service in the composition root (platform/container.ts); routes use container.bookmarks.service; tests use an in-memory repository.\n\n3. **routes.ts:25-27 - Ad hoc 404.** Sends `{ ok: false, message: 'bookmark missing' }`, bypassing the unused NotFoundError (platform/errors.ts:1); body shape likely differs from the central error format. Fix: service throws NotFoundError('Bookmark'); one central setErrorHandler maps errors to status and body.\n\n4. **routes.ts:15, 28, 38 - Raw Drizzle rows returned as the API response.** Persistence shape (incl. workspaceId, Date createdAt) becomes the public contract. Fix: define a BookmarkDto/response schema and map rows to it in the repository or service.\n\n5. **routes.ts:18, 31 (and 20, 33) - Validation unreliable and types cast.** Zod objects are passed as Fastify schema without a Zod type provider/validatorCompiler, then handlers use `as z.infer<...>` casts that hide failure if validation is not running; schemas declared inline, no response schema. Fix: register fastify-type-provider-zod, drop the casts, move schemas to bookmarks/schemas.ts, add response schemas.\n\n6. **_shared/context.ts:1-7 - Context helper tied to HTTP and Container.** getContext takes FastifyRequest and the whole Container for just { workspaceId }, called in every handler; pushes service code toward depending on Fastify/Container. Fix: resolve workspace once in an onRequest/preHandler hook, decorate the request, and pass a plain workspaceId to the service.\n"}], "grading": {"expectations": [{"text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)", "passed": true, "evidence": "#1 routes query the DB directly"}, {"text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)", "passed": true, "evidence": "#4 raw Drizzle rows returned"}, {"text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts", "passed": true, "evidence": "#3 ad hoc 404 bypassing NotFoundError"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "6 findings; only #6 is questionable"}, {"text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone", "passed": false, "evidence": "#6 recommends replacing getContext with a hook (contradicts repo convention); invents ports.ts/repository.drizzle.ts and a service layer for a trivial module"}], "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8}}}, {"id": "eval-service-couples-to-vendor-and-env-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: notifications module\n\nPaths relative to `fixtures/notifications/`.\n\n1. **HIGH - `src/modules/notifications/service.ts:1,7` - application service instantiates the Slack SDK directly.**\n   `WebClient` from `@slack/web-api` is built as a field initializer, so the vendor SDK sits inside the application ring. There is no port, no adapter and no test double, so the service cannot be tested without Slack. A Slack API change lands in the service.\n   Fix:\n   - Define a `Notifier` port (for example `send(recipient, text): Promise<void>`) in `vendor/shared/adapters.ts`. Write it in the caller's vocabulary, not Slack's.\n   - Implement it in `adapters/slack/web-api.ts`, with the SDK types confined to that file.\n   - Add a fake in `adapters/mocks.ts`.\n   - Add a lazy `notifier` getter and a `notifier?` slot in `ContainerOverrides` in `platform/container.ts`.\n   - The service then calls `this.container.notifier.send(...)`.\n\n2. **HIGH - `src/modules/notifications/service.ts:7` - `process.env.SLACK_BOT_TOKEN` is read outside the two allowed files.**\n   Only `platform/config.ts` and `adapters/secrets/local.ts` may read `process.env`. The token is a secret, so it also bypasses `SecretsProvider`. The `WebClient` is also built at construction time, so a missing token is not handled lazily.\n   Fix: read the token in the Slack adapter through `secrets.get('SLACK_BOT_TOKEN')`. `LocalSecrets` already falls back to the env. Build the client lazily, and have the container pass `this.secrets` to the adapter. Do not add the token to `AppConfig`.\n\n3. **HIGH - `src/modules/notifications/service.ts:3,14` and `src/platform/container.ts` (whole file) - cross-module import, and `container.usersRepo` does not exist.**\n   - The service imports `../users/service.js` and builds `new UsersService(this.container)` on every call. That couples two modules at source level.\n   - `UsersService` calls `this.container.usersRepo.findOwner` (`users/service.ts:13`), but `Container` has no `usersRepo` getter and `ContainerOverrides` has no slot for one. This will not typecheck.\n   Fix:\n   - Add `usersRepo` (and a `ContainerOverrides.usersRepo` slot) to `container.ts`. The users entity is shared, so the container should build it.\n   - Notifications should call `this.container.usersRepo.findOwner(workspaceId)` directly, or go through a container-exposed `usersService`. Remove the sibling import.\n   - `UsersService.getOwner` is a pure pass-through. If nothing else uses it, delete it rather than keep the ceremony.\n\n4. **MEDIUM - `src/modules/notifications/routes.ts:12-16` - the 202 \"queued\" response is false.**\n   The handler awaits `notifyReviewDone`, which makes the Slack HTTP call inline. A Slack outage or slowness blocks the request, and `{ queued: true }` is not what happened.\n   Fix: register a job in `platform/jobs.ts` and have the service call `enqueue`. The registered callback should only adapt the payload and call the service method. Retries and timeouts then live in the job runner and the adapter, not in the service. If you want synchronous behaviour instead, return 200 and map Slack failures to `ExternalServiceError`.\n\n5. **MEDIUM - `src/modules/notifications/routes.ts:12,14` - validation is only half schema-first, and no response schema is declared.**\n   - The cast `req.params as z.infer<typeof Params>` suggests the zod type provider is not driving the handler types.\n   - There is no `schema.response`, so there is no output allowlist.\n   Fix: use the route generic or the `fastify-type-provider-zod` typed app so `req.params` is inferred without a cast. Add `response: { 202: z.object({ queued: z.literal(true) }) }`.\n\n6. **MEDIUM - `src/platform/config.ts:6` - `z.coerce.boolean()` makes `NOTIFICATIONS_ENABLED=false` evaluate to `true`.**\n   Coercion applies `Boolean(\"false\")`, which is `true`. The flag read in `service.ts:12` can never be turned off through the environment, which defeats the config chokepoint.\n   Fix: use `z.enum(['true','false']).default('true').transform(v => v === 'true')`, or `z.stringbool()` on Zod 4.\n\n7. **LOW - `src/modules/notifications/service.ts:9` - new service takes the whole `Container`.**\n   The service needs only `config.NOTIFICATIONS_ENABLED`, `reviewRepo`, the users lookup and the notifier. A new service should take those capabilities as constructor arguments, so its dependencies show in its signature and its tests do not over-provision. This is low priority because existing services already follow the whole-container pattern, but it is easy to get right in new code.\n\nChecked and fine: `helpers.ts` is pure; `adapters/secrets/local.ts` is an allowed `process.env` reader; the route uses `getContext` and passes `workspaceId` down; the route does no DB access.\n"}], "grading": {"expectations": [{"text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter", "passed": true, "evidence": "#1 Slack WebClient built in service, no port"}, {"text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider", "passed": true, "evidence": "#2 process.env read outside the 2 allowed files; use SecretsProvider"}, {"text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)", "passed": true, "evidence": "#3 cross-module import of ../users/service.js"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "7 findings, #6 is a real config bug, no noise"}, {"text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container", "passed": true, "evidence": "#1 port in vendor/shared/adapters.ts + adapters/mocks.ts; #2 secrets.get via container; #3 via container.usersRepo"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "eval-service-couples-to-vendor-and-env-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: notifications module\n\n1. **src/modules/notifications/service.ts:1,7,17 - Vendor SDK used directly in the service.**\n   `@slack/web-api` is imported and a `WebClient` is built inside the service, so business logic is tied to Slack and cannot be unit-tested without the network.\n   Fix: define a `Notifier` port (e.g. `send(recipient, text)`) in the shared adapters contracts. Implement it in `src/adapters/notifications/slack.ts`, the only file that imports `@slack/web-api`. Expose it from `Container` with an override slot, and have the service call `notifier.send(...)`.\n\n2. **src/modules/notifications/service.ts:7 - Secret read from `process.env` inside the service.**\n   `process.env.SLACK_BOT_TOKEN` bypasses `config.ts` and the `SecretsProvider` (`container.secrets`), the project's secrets path. The client is also built in a field initializer, so it is created when the routes register.\n   Fix: the Slack adapter takes the token via its constructor. The composition root reads it from `secrets.get('SLACK_BOT_TOKEN')`. The service never touches env.\n\n3. **src/modules/notifications/service.ts:14 - Service constructs another module's service.**\n   `new UsersService(this.container)` hard-wires a cross-module dependency and builds a new instance on every call.\n   Fix: inject a narrow dependency through the constructor, e.g. `ownerLookup: { getOwner(workspaceId) }`. Wire it in the container or composition root.\n\n4. **src/modules/users/service.ts:13 - `container.usersRepo` does not exist.**\n   `Container` (container.ts:11-24) defines only `secrets` and `reviewRepo`, so this will not compile and the owner lookup has no provider. The `UsersService` wrapper adds nothing over the repo call.\n   Fix: add a `UsersRepository` (or port) to the container, with an override slot like the others. Inject it into `UsersService` by its repo type, not via the whole container.\n\n5. **src/modules/notifications/service.ts:9 and src/modules/users/service.ts:10 - Whole `Container` injected into services (service locator).**\n   Hidden dependencies make the service signature meaningless, and tests must fake the entire container.\n   Fix: take only what is needed, e.g. `constructor(deps: { config: Pick<AppConfig,'NOTIFICATIONS_ENABLED'>; reviews: ReviewReader; owners: OwnerLookup; notifier: Notifier })`.\n\n6. **src/platform/container.ts:4,8,21 and src/modules/notifications/service.ts:15 - Depends on the concrete `ReviewRepository` class from another module.**\n   The container and override types use the class, not an interface. Notifications only needs `get(reviewId)`.\n   Fix: declare a small `ReviewReader` port, or a repository interface owned by the consumer. Let `ReviewRepository` implement it.\n\n7. **src/platform/container.ts:17-23 - Getters build a new instance on every access.**\n   Each `container.secrets` or `container.reviewRepo` creates a fresh object, and `LocalSecrets` re-reads and parses the secrets file on every `get`. Singletons and shared state such as a DB handle are impossible.\n   Fix: construct once, in the constructor or lazily and memoized: `this.secrets = overrides.secrets ?? new LocalSecrets()`.\n\n8. **src/modules/notifications/routes.ts:10 - Route layer builds the service.**\n   `new NotificationsService(container)` is composition inside the HTTP layer, so routes cannot be tested with a stub service.\n   Fix: build the service in the composition root (container) and have `registerNotificationRoutes` receive it.\n\n9. **src/modules/notifications/routes.ts:15-16 and service.ts:12 - 202 \"queued\" reply is false.**\n   The route awaits the Slack call inline, then returns `{queued:true}`, even when the flag is off and the service silently returns. Slack latency and failures also hit the request thread.\n   Fix: either return 200 with the real outcome, or enqueue the work on a job and have the service return a status such as `'sent' | 'disabled'`.\n\n10. **src/platform/config.ts:6 - `z.coerce.boolean()` mis-parses env strings.**\n    `NOTIFICATIONS_ENABLED=false` coerces to `true` because any non-empty string is truthy, so the kill switch cannot be turned off through env.\n    Fix: `z.enum(['true','false']).default('true').transform(v => v === 'true')`.\n"}], "grading": {"expectations": [{"text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter", "passed": true, "evidence": "#1 vendor SDK in service"}, {"text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider", "passed": true, "evidence": "#2 process.env token bypasses container.secrets"}, {"text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)", "passed": true, "evidence": "#3 new UsersService per call, cross-module"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": false, "evidence": "10 findings: #6 (port for ReviewRepository), #7 (memoize getters), #8, #9 are over-engineering or tangential -> >2 noisy"}, {"text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container", "passed": false, "evidence": "cross-module fixed by narrow constructor injection, not via container; no mocks.ts double"}], "summary": {"passed": 3, "failed": 2, "total": 5, "pass_rate": 0.6}}}, {"id": "eval-unit-of-work-job-logic-and-test-mocks-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: `invoices` module\n\n1. **No transaction around the issue sequence** - `src/modules/invoices/service.ts:24-26` (`insertInvoice -> insertLines -> markIssued`).\n   These are three independent writes. A failure after the first leaves an invoice with no lines, or with lines but still `draft`. The service is the unit of work, so it must own the transaction.\n   Fix: wrap the three calls in `db.transaction(async (tx) => {...})` inside `issue()`. Add an optional trailing `tx` parameter to each repository method. Better still, insert the invoice with `status: 'issued'` and `issuedAt` set, so `markIssued` is not a separate write.\n\n2. **Repository hard-wires the global `db` singleton, so a transaction cannot be passed in** - `src/modules/invoices/repository.ts:2` (used at lines 12, 18, 22, 26, 33, 37).\n   Every method calls the module-level `db`. Finding 1 cannot be fixed until the repository can accept a caller-owned handle. It also couples the persistence adapter to an import instead of the composition root.\n   Fix: take `db` in the constructor (built in `platform/container.ts`) and give each write method an optional last parameter `tx: Tx = this.db`. Repositories must never call `db.transaction()` themselves.\n\n3. **Business rule lives inside the job handler** - `src/modules/invoices/service.ts:8-19`.\n   The `jobs.register` callback is a driving adapter. It should only adapt the payload and call a service method. Here it holds the late-fee policy: the 1.5%/month rate, the 20% cap, the days-to-months rounding, and the cents-to-string conversion. It also does an N+1 (`linesFor` per invoice) and uses float arithmetic on money (`subtotal * 0.015`), which is a correctness risk.\n   Fix:\n   - Add a service method `applyLateFees(now: Date)`.\n   - Move the calculation into a pure `computeLateFee(subtotalCents, daysLate)` in `helpers.ts`. Use integer cents and an explicit rounding step.\n   - Put the rate, cap and the 30-day/86_400_000 figures in `constants.ts`.\n   - Make the job callback a one-liner: `() => this.applyLateFees(new Date())`.\n   - Have the repository fetch overdue invoices with their subtotals in one query, or run the fee updates in a transaction.\n\n4. **Service registers a job as a constructor side effect, and the route instantiates the service** - `src/modules/invoices/service.ts:8` and `src/modules/invoices/routes.ts:14`.\n   Registration happens whenever `new InvoicesService(...)` runs. Any second construction (a test, another caller) re-registers `LATE_FEE_JOB`. `scheduleLateFees()` (`service.ts:30`) has no caller or route, so the job is dead code as written.\n   Fix: register the handler once, explicitly, at the composition root. Follow the repo's pattern of registering from a `register`/`init` step rather than the constructor. Have `routes.ts` receive or obtain the service from the container instead of `new`-ing it. Decide who calls `scheduleLateFees()` (a cron or a route), and wire that.\n\n5. **Unit test mocks the module instead of injecting a fake via the container** - `src/modules/invoices/service.test.ts:3-11` (`vi.mock('./repository.js')`).\n   Module-level mocking ties the test to the import graph. It also fakes our own repository, which is the wrong thing to fake: the shape of the writes is what needs a real test. The `__mocks` export is never used, and `container` is cast with `as never`. The test covers only the happy path of `issue()` and asserts nothing about the repository calls. It misses the job and fee rule, which is where the risk is.\n   Fix:\n   - Move the fee calculation into a pure helper and unit-test it with no mocks.\n   - Cover `issue()` and `applyLateFees` with a `*.it.test.ts` against real Postgres, including a rollback case.\n   - Where a seam is needed, pass an object that satisfies the interface through `ContainerOverrides` instead of `vi.mock`.\n\n6. **Drizzle row types leak out of the repository** - `src/modules/invoices/repository.ts:12-14, 25-30, 32-34`.\n   `insertInvoice` returns the raw `$inferSelect` row (`row!`), and `listOverdue` / `linesFor` return raw rows. `service.ts` consumes them directly (`inv.dueAt`, `l.amountCents`). The service logic is now bound to the physical schema, so a column rename ripples into business code.\n   Fix: return domain-shaped types (for example `{ id, dueAt }` and `{ amountCents }`), mapped inside the repository or in `helpers.ts`. Have `insertInvoice` return just the id, since that is all `issue()` uses.\n\n7. **Route does not use a typed schema or declare a response** - `src/modules/invoices/routes.ts:16-18`.\n   The handler casts `req.body as z.infer<typeof IssueBody>`, which means the type provider is not inferring the body type. It also declares no `schema.response`, so there is no output allowlist.\n   Fix: use `fastify-type-provider-zod` so the body type is inferred and the cast goes away. Add `schema.response: { 201: z.object({ id: z.string().uuid() }) }`. Move `IssueBody` to a module `types.ts` or schema file if another caller will need it.\n\n8. **Low: new service takes the whole `Container`** - `src/modules/invoices/service.ts:7`.\n   It uses only `jobs` and `invoiceRepo`. A wide dependency hides what the class touches, and it is why the test has to cast a partial object `as never`.\n   Fix: take `{ repo: InvoiceRepository, jobs: JobRunner }` through the constructor.\n"}], "grading": {"expectations": [{"text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction", "passed": true, "evidence": "#1 issue() = 3 writes, no transaction"}, {"text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method", "passed": true, "evidence": "#3 late-fee rule inside jobs.register callback"}, {"text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double", "passed": true, "evidence": "#5 vi.mock('./repository.js') instead of injection"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "8 findings, all in-scope architecture/persistence"}, {"text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres", "passed": true, "evidence": "#2 tx param to repository; #3 applyLateFees + computeLateFee helper; #5 ContainerOverrides + *.it.test.ts with rollback case"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "eval-unit-of-work-job-logic-and-test-mocks-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: invoices module\n\nFiles `src/db/client.js`, `src/platform/container.js` and `src/modules/_shared/context.js` are not in the fixture, so I did not read them.\n\n1. **`service.ts:22-27` (with `repository.ts:11-23`): `issue()` is three separate writes with no transaction.**\n   - `insertInvoice`, `insertLines` and `markIssued` run independently. If `insertLines` or `markIssued` fails, you are left with a `draft` invoice that has no lines, or lines that were never issued. The caller gets a 500 and the data is inconsistent.\n   - Fix: add a unit-of-work or transaction boundary owned by the service layer. For example, `uow.run(async (tx) => { ... })` backed by `db.transaction`, with repository methods taking the tx.\n   - Also have the insert create the invoice as `issued` directly, or make issue a single repository operation, so the extra `markIssued` write goes away.\n\n2. **`repository.ts:2` (used at lines 12, 18, 22, 26, 33, 37): the repository imports the global `db` singleton.**\n   - It can't join a transaction (this is the root cause of finding 1). It also can't be pointed at a test database or a different connection.\n   - Fix: inject the executor, as `new InvoiceRepository(db)`, with methods accepting `tx = this.db`. Build it in the composition root.\n\n3. **`service.ts:8-19`: the constructor registers a background job.**\n   - Constructing a service has a side effect on `container.jobs`. `routes.ts:14` constructs the service once per route registration. A second construction (a test, or a second module) re-registers the job and either duplicates or throws.\n   - The service also shouldn't know job wiring. Job registration is infrastructure and belongs in the composition root or a `jobs.ts` file.\n   - Fix: make the service a plain class with a `applyLateFees(now)` method, and register the job in the bootstrap, with the handler calling `service.applyLateFees(new Date())`. Keep `scheduleLateFees` as a thin enqueue call.\n\n4. **`service.ts:13-17`: the late-fee business rule is buried in an anonymous job closure.**\n   - The 1.5% per month rate, the 20% cap and the 30-day month rounding are untestable without the job runner, the container and the database.\n   - The money maths is done with floats (`subtotal * 0.015`). It then goes through `/100` and `toFixed(2)`, which gives rounding drift.\n   - The unit is inconsistent: lines are stored in integer cents, but `lateFee` is stored as a decimal-string numeric in currency units (`schema.ts:9`, `repository.ts:36`).\n   - Fix: extract a pure function such as `computeLateFee(lines, dueAt, now): number` (integer cents, `Math.round`) into `domain/late-fee.ts`, with unit tests on the boundaries. Store the fee in integer cents (`lateFeeCents`) to match `amountCents`.\n\n5. **`service.ts:1-2, 7, 10-17, 23`: the service depends on the whole `Container` (service locator).**\n   - It reaches into `container.invoiceRepo` and `container.jobs` and can see everything else in the container. The dependencies are hidden, and every test must build a container and cast it (`as never`).\n   - `service.ts:2` also imports `NewLine` from `repository.ts`, so the application layer depends on the persistence adapter's types.\n   - Fix: take explicit dependencies in the constructor, for example `new InvoicesService({ invoices: InvoiceStore, uow, clock })`. Define `InvoiceStore` as a port interface in the module's domain or application layer, with `NewLine` and `Invoice` types alongside it. `InvoiceRepository` then implements the port.\n\n6. **`routes.ts:14`: the route layer constructs the service (`new InvoicesService(container)`).**\n   - The HTTP adapter does composition, so the wiring is split between routes and the container.\n   - Fix: build the service in the composition root and pass the built service (or `container.invoicesService`) to `registerInvoiceRoutes`.\n   - Related: `routes.ts:18` uses `req.body as z.infer<...>`, which discards type safety. Use the Fastify Zod type provider so the body is typed from the schema.\n\n7. **`service.test.ts:3-11, 20-24`: the test mocks module internals instead of injecting a fake.**\n   - `vi.mock('./repository.js')` and `as never` couple the test to file paths and to the container shape. The mock repository returns only `{ id }`.\n   - The only assertion is that the return value is `'inv-1'`. It never checks that lines were inserted, that the invoice was marked issued, or that a failure rolls back. The test would pass even if finding 1's bug were fixed incorrectly.\n   - Nothing covers the late-fee logic (finding 4) at all. The job handler is registered into a `vi.fn()` that is never invoked.\n   - Fix: once the ports exist, write the service tests against an in-memory fake implementing `InvoiceStore` and a fake `uow`. Assert state (the stored invoice is issued, its lines are present, nothing is persisted on failure). Unit-test `computeLateFee` directly. Test the repository against a real Postgres.\n\n8. **`service.ts:10-12` (with `repository.ts:25-34`): the job does an N+1 and has no per-invoice isolation.**\n   - It issues one `linesFor` query per overdue invoice. One failing invoice aborts the whole batch, and there is no transaction around each fee update.\n   - Fix: have the repository return overdue invoices with line subtotals in one query (a join with `sum(amount_cents)`). Process each invoice in its own try or transaction.\n\n9. **`schema.ts:15`: `invoice_lines.invoice_id` has no foreign key to `invoices.id`.**\n   - Nothing at the database level stops orphan lines, which matters more because issuing is non-atomic today.\n   - Fix: `.references(() => invoices.id, { onDelete: 'cascade' })` plus a migration. Also add an index on `invoice_lines.invoice_id` for `linesFor`.\n"}], "grading": {"expectations": [{"text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction", "passed": true, "evidence": "#1 3 writes with no transaction"}, {"text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method", "passed": true, "evidence": "#4 late-fee rule buried in job closure"}, {"text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double", "passed": true, "evidence": "#7 vi.mock of module internals"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": false, "evidence": "9 findings; #9 (missing FK in schema) and #8 (N+1) are outside the architecture ask, #5 pushes a new InvoiceStore port"}, {"text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres", "passed": false, "evidence": "tx fix OK, job fix OK, but tests -> in-memory fakes of a new port, not ContainerOverrides / *.it.test.ts"}], "summary": {"passed": 3, "failed": 2, "total": 5, "pass_rate": 0.6}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "onion-architecture", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-10-06T06:30:46Z", "evals_run": [1, 2, 3], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 30.4, "tokens": 65513, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)", "passed": true, "evidence": "#1 routes.ts:2,4,5,15,21-24,34-37 direct drizzle queries"}, {"text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)", "passed": true, "evidence": "#4 raw rows returned, no response schema"}, {"text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts", "passed": true, "evidence": "#3 hand-built 404, use NotFoundError"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "7 findings; extras (#2,#5,#6,#7) are in-scope, #6 low-priority"}, {"text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone", "passed": true, "evidence": "#1 -> repository.ts via container.bookmarksRepo; 'Checked, no problem: getContext is the sanctioned adaptation point'"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 47.0, "tokens": 68431, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter", "passed": true, "evidence": "#1 Slack WebClient built in service, no port"}, {"text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider", "passed": true, "evidence": "#2 process.env read outside the 2 allowed files; use SecretsProvider"}, {"text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)", "passed": true, "evidence": "#3 cross-module import of ../users/service.js"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "7 findings, #6 is a real config bug, no noise"}, {"text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container", "passed": true, "evidence": "#1 port in vendor/shared/adapters.ts + adapters/mocks.ts; #2 secrets.get via container; #3 via container.usersRepo"}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 38.3, "tokens": 68205, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction", "passed": true, "evidence": "#1 issue() = 3 writes, no transaction"}, {"text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method", "passed": true, "evidence": "#3 late-fee rule inside jobs.register callback"}, {"text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double", "passed": true, "evidence": "#5 vi.mock('./repository.js') instead of injection"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "8 findings, all in-scope architecture/persistence"}, {"text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres", "passed": true, "evidence": "#2 tx param to repository; #3 applyLateFees + computeLateFee helper; #5 ContainerOverrides + *.it.test.ts with rollback case"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.8, "passed": 4, "failed": 1, "total": 5, "time_seconds": 45.9, "tokens": 58469, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)", "passed": true, "evidence": "#1 routes query the DB directly"}, {"text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)", "passed": true, "evidence": "#4 raw Drizzle rows returned"}, {"text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts", "passed": true, "evidence": "#3 ad hoc 404 bypassing NotFoundError"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": true, "evidence": "6 findings; only #6 is questionable"}, {"text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone", "passed": false, "evidence": "#6 recommends replacing getContext with a hook (contradicts repo convention); invents ports.ts/repository.drizzle.ts and a service layer for a trivial module"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 3, "failed": 2, "total": 5, "time_seconds": 36.1, "tokens": 58950, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter", "passed": true, "evidence": "#1 vendor SDK in service"}, {"text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider", "passed": true, "evidence": "#2 process.env token bypasses container.secrets"}, {"text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)", "passed": true, "evidence": "#3 new UsersService per call, cross-module"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": false, "evidence": "10 findings: #6 (port for ReviewRepository), #7 (memoize getters), #8, #9 are over-engineering or tangential -> >2 noisy"}, {"text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container", "passed": false, "evidence": "cross-module fixed by narrow constructor injection, not via container; no mocks.ts double"}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 3, "failed": 2, "total": 5, "time_seconds": 46.3, "tokens": 60797, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags issue() performing insertInvoice/insertLines/markIssued as separate writes with no transaction", "passed": true, "evidence": "#1 3 writes with no transaction"}, {"text": "Flags late-fee business rule living inside the jobs.register callback instead of a service/domain method", "passed": true, "evidence": "#4 late-fee rule buried in job closure"}, {"text": "Flags service.test.ts using vi.mock on the module's own repository instead of ContainerOverrides / injected double", "passed": true, "evidence": "#7 vi.mock of module internals"}, {"text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems", "passed": false, "evidence": "9 findings; #9 (missing FK in schema) and #8 (N+1) are outside the architecture ask, #5 pushes a new InvoiceStore port"}, {"text": "Fixes use repo mechanisms: caller-owned tx passed to repository, job callback delegates to service/helpers, tests inject via ContainerOverrides / *.it.test.ts on real Postgres", "passed": false, "evidence": "tx fix OK, job fix OK, but tests -> in-memory fakes of a new port, not ContainerOverrides / *.it.test.ts"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 38.5667, "stddev": 8.3032, "min": 30.4, "max": 47.0}, "tokens": {"mean": 67383.0, "stddev": 1623.4051, "min": 65513, "max": 68431}}, "without_skill": {"pass_rate": {"mean": 0.6667, "stddev": 0.1155, "min": 0.6, "max": 0.8}, "time_seconds": {"mean": 42.7667, "stddev": 5.777, "min": 36.1, "max": 46.3}, "tokens": {"mean": 59405.3333, "stddev": 1228.9802, "min": 58469, "max": 60797}}, "delta": {"pass_rate": "+0.33", "time_seconds": "-4.2", "tokens": "+7978"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

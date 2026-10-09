@@ -11,6 +11,12 @@ import {
   Conformance,
   Onboarding,
   EvalRun,
+  EvalCase,
+  EvalCaseInput,
+  EvalCaseBody,
+  EvalDashboard,
+  EvalTrendPoint,
+  EvalSuiteRun,
   MemoryItem,
   RunTrace,
   Settings,
@@ -335,5 +341,135 @@ describe('platform DTOs', () => {
       findings: null,
     });
     expect(unreviewed.findings).toBeNull();
+  });
+});
+
+describe('Eval contracts (SPEC-04)', () => {
+  const item = { file: 'src/a.ts', start_line: 3, end_line: 5 };
+  const caseBase = {
+    owner_kind: 'agent' as const,
+    owner_id: 'a1',
+    name: 'c',
+    input_diff: 'diff',
+  };
+
+  it('EvalRun / EvalTrendPoint / EvalDashboard accept null metrics', () => {
+    expect(() =>
+      EvalRun.parse({
+        recall: null,
+        precision: null,
+        citation_accuracy: null,
+        traces_passed: 0,
+        traces_total: 0,
+        duration_ms: 0,
+        cost_usd: null,
+        per_trace: [],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      EvalTrendPoint.parse({
+        ran_at: 't',
+        recall: null,
+        precision: null,
+        citation_accuracy: null,
+        pass_rate: null,
+        cost_usd: null,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      EvalDashboard.parse({
+        owner_kind: 'agent',
+        owner_id: 'a1',
+        cases_total: 0,
+        current: {
+          recall: null,
+          precision: null,
+          citation_accuracy: null,
+          traces_passed: 0,
+          traces_total: 0,
+          cost_usd: null,
+        },
+        delta: { recall: null, precision: null, citation_accuracy: null },
+        trend: [],
+        recent_runs: [],
+        alert: null,
+      }),
+    ).not.toThrow();
+  });
+
+  it('EvalCaseInput: must_find needs items; empty list only with must_not_flag', () => {
+    const ok = EvalCaseInput.safeParse({ ...caseBase, expectation: 'must_find', expected_output: [item] });
+    expect(ok.success).toBe(true);
+    expect(
+      EvalCaseInput.safeParse({ ...caseBase, expectation: 'must_find', expected_output: [] }).success,
+    ).toBe(false);
+    expect(
+      EvalCaseInput.safeParse({ ...caseBase, expectation: 'must_not_flag', expected_output: [] }).success,
+    ).toBe(true);
+    // expectation defaults to must_find
+    const def = EvalCaseInput.parse({ ...caseBase, expected_output: [item] });
+    expect(def.expectation).toBe('must_find');
+  });
+
+  it('EvalCaseInput / EvalCaseBody reject malformed expectation items', () => {
+    for (const bad of [
+      [{ file: '', start_line: 1 }],
+      [{ file: 'a.ts', start_line: 0 }],
+      [{ file: 'a.ts', start_line: 1.5 }],
+      [{ file: 'a.ts' }],
+      'not-an-array',
+      { file: 'a.ts', start_line: 1 },
+    ]) {
+      expect(EvalCaseInput.safeParse({ ...caseBase, expectation: 'must_not_flag', expected_output: bad }).success).toBe(
+        false,
+      );
+    }
+    expect(EvalCaseBody.safeParse({ name: 'n', expectation: 'must_find', expected_output: [] }).success).toBe(false);
+    expect(EvalCaseBody.safeParse({ name: 'n', expectation: 'bogus', expected_output: [item] }).success).toBe(false);
+  });
+
+  it('EvalCase (read) re-applies the cross-field rule', () => {
+    const row = {
+      id: 'c1',
+      ...caseBase,
+      input_files: null,
+      input_meta: null,
+      source_finding_id: null,
+      created_at: 't',
+      updated_at: 't',
+    };
+    expect(EvalCase.safeParse({ ...row, expectation: 'must_not_flag', expected_output: [] }).success).toBe(true);
+    expect(EvalCase.safeParse({ ...row, expectation: 'must_find', expected_output: [] }).success).toBe(false);
+  });
+
+  it('EvalSuiteRun parses a running suite with null metrics', () => {
+    expect(() =>
+      EvalSuiteRun.parse({
+        id: 's1',
+        agent_id: 'a1',
+        agent_name: 'Agent',
+        agent_version: 3,
+        config_snapshot: {
+          provider: 'openrouter',
+          model: 'm',
+          system_prompt: 'p',
+          strategy: 'single-pass',
+          ci_fail_on: 'critical',
+          repo_intel: true,
+          skills: [],
+        },
+        status: 'running',
+        reason: null,
+        recall: null,
+        precision: null,
+        citation_accuracy: null,
+        cases_passed: 0,
+        cases_total: 2,
+        cost_usd: null,
+        duration_ms: null,
+        ran_at: 't',
+        error: null,
+      }),
+    ).not.toThrow();
   });
 });

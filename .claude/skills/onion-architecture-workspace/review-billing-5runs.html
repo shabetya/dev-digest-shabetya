@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "onion-architecture", "runs": [{"id": "eval-hidden-side-effects-billing-new_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: billing fixture (paths under `src/`)\n\n1. **`modules/billing/service.ts:24-39` (Stripe charge inside `db.transaction`).**\n   `payments.charge(...)` at line 30 is a network call made while the transaction holds a pooled connection and row locks. It also cannot be rolled back. If `markPaid` fails or the commit fails, the customer has been charged and the DB says the invoice is open.\n   Fix: split it into three steps. (a) Read and validate in a short transaction, or flip `status` to a `pending` intent with a conditional update. (b) Call `payments.charge` outside any transaction, ideally with an idempotency key derived from the invoice id so a retry cannot double-charge. (c) Persist the result in a second short transaction (`markPaid`).\n\n2. **`modules/billing/service.ts:37` (`runBus.emit('invoice.paid')` inside the transaction).**\n   A rollback after line 37 does not retract the event, so subscribers see a payment that never committed.\n   Fix: collect the event during the unit of work and emit it after `db.transaction` resolves.\n\n3. **`modules/billing/service.ts:11-17` + `modules/billing/repository.ts:17-27` (receipt job is not retry-safe and holds logic).**\n   - The handler sends the mail (line 14) and only then calls `markReceiptSent` (line 15). A crash or retry in between sends the receipt again. It also loops over a list read up front, so two concurrent runs both send every receipt.\n   - The handler body is orchestration, not adapt-and-call. The loop, message formatting and state flips belong in a named service method, with the callback only calling it.\n   - `receiptStatus` and `receiptSent` (`db/schema.ts:17-18`) are two flags for the same fact. Only `receiptSent` is used in the query.\n   Fix: claim before acting. Add `claimReceipt(id)` doing `UPDATE ... SET receipt_status='sending' WHERE id=$1 AND receipt_status='pending' RETURNING ...`, and send only if a row is returned. Then mark `sent`, or revert to `pending` on failure. Pass an idempotency key to the mailer where it supports one. Drop the redundant boolean. Move the loop into `BillingService.sendPendingReceipts()` and have the job callback call it.\n\n4. **`modules/billing/repository.ts:8-10` (`getById(id)` has no tenant), used at `service.ts:25` and `service.ts:43`.**\n   - `get` (line 43) accepts `workspaceId` and ignores it. `GET /invoices/:id` returns any tenant's invoice by uuid, which is a cross-tenant leak.\n   - `pay` (line 25) loads the invoice with no workspace check, so it can charge another tenant's invoice. The customer lookup at line 27 is scoped, but the invoice itself is not.\n   Fix: change the signature to `getById(workspaceId, id, tx?)` with `and(eq(invoices.workspaceId, workspaceId), eq(invoices.id, id))` in the query. Update both call sites. Also scope `markPaid` by workspace.\n\n5. **`modules/billing/service.ts:4,22` (cross-module reach into `customers/repository`, instantiated per call).**\n   `new CustomerRepository()` inside `pay()` couples billing to the customers folder at source level. It also builds a repository outside the composition root, so it cannot be overridden in tests.\n   Fix: construct `CustomerRepository` once in `platform/container.ts` (lazy getter plus a `ContainerOverrides` slot). Use `this.container.customersRepo` here and remove the import.\n\n6. **`modules/billing/service.ts:42-46` + `routes.ts:12,18-19` (Drizzle row returned to the wire).**\n   `get` returns the raw `invoices` row, including `paymentRef`, `receiptStatus`, `receiptSent` and `workspaceId`. The API contract is now a mirror of the physical schema. No `schema.response` is declared, so nothing strips extra fields.\n   Fix: add `toInvoiceDto` in `modules/billing/helpers.ts` and return the DTO type from `@devdigest/shared`. Declare `schema.response` on both routes (including the 201 for `pay`). Replace the `req.params as ...` casts with the zod type provider's inferred types.\n\n7. **`modules/billing/service.ts:2,24` and `modules/billing/repository.ts:2` (global `db` import used directly).**\n   The service and repository import the `db` singleton instead of receiving it. This ties both to a concrete connection and makes it hard to inject a test database.\n   Fix: take the DB handle from the container (the service starts the transaction from `container.db`, the repository is constructed with it). Keep the `tx` parameter as the explicit propagation mechanism.\n\nNot reported (checked, no violation): `adapters/payments/amount.ts` is pure code filed under `adapters/`, so a service importing it is fine. `db/seed.ts` is a boundary script and may use `Date.now`, `new Date()` and `console.log`. `StripeGateway` correctly keeps the SDK inside the adapter. `routes.ts` does not query the DB directly. `modules/health/routes.ts` is a legitimate routes-only module.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-new_skill-run-2", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: billing fixture (paths under src/)\n\n1. **modules/billing/service.ts:24-35 (CRITICAL) - Stripe charge runs inside `db.transaction()`, and `pay` is not safe to repeat.**\n   `payments.charge` is a network call made while the transaction holds a pooled connection and the invoice row. If `markPaid` or the commit fails, the customer is charged but the invoice stays `open`, and the charge cannot be rolled back. There is also no status guard, so a client retry of `POST /invoices/:id/pay` charges again. `StripeGateway.charge` (adapters/payments/stripe.ts:11-18) takes no idempotency key.\n   Fix:\n   - Claim the invoice first with a conditional update (`open -> paying`, returning the row). Only the winner proceeds.\n   - Call the gateway outside any transaction, passing an idempotency key (the invoice id) as a new `PaymentGateway.charge` parameter, and implement it in `StripeGateway`.\n   - Persist the result in a short transaction (`markPaid`). Reject or return the existing result if the invoice is already paid.\n\n2. **modules/billing/service.ts:37 (HIGH) - `runBus.emit('invoice.paid')` fires inside the transaction.**\n   A rollback does not retract the event, so subscribers see a payment that never committed.\n   Fix: return or collect the event from the unit of work and emit it after the transaction resolves.\n\n3. **modules/billing/service.ts:11-17 and modules/billing/repository.ts:17-27 (HIGH) - the receipt job sends the email first and marks it sent afterwards.**\n   A crash or retry between `mailer.send` (line 14) and `markReceiptSent` (line 15) re-sends the receipt on the next run. Two overlapping runs also both read the same pending rows, so they double-send.\n   Fix:\n   - Add a `claimReceipt(id)` repository method that does a conditional `UPDATE ... SET receipt_status='sending' WHERE id=? AND receipt_status='pending' RETURNING ...`. Only the claim winner sends, then sets `sent`. Alternatively, pass an idempotency key to the mailer.\n   - `receiptStatus` and `receiptSent` (db/schema.ts:17-18) hold the same state twice. Drop `receiptSent` and use the status column.\n   - Move the loop body into a service method (e.g. `sendPendingReceipts()`). The `jobs.register` callback should only adapt the payload and call that method, since a job handler is a driving adapter and must not hold rules.\n\n4. **modules/billing/repository.ts:8-10, service.ts:25 and 43 (HIGH) - reads by id are not tenant-scoped, and `get` leaks across tenants.**\n   `getById(id)` has no `workspaceId` predicate. `BillingService.get(workspaceId, invoiceId)` accepts `workspaceId` and never uses it (line 43), so `GET /invoices/:id` returns any tenant's invoice. In `pay`, the tenant is only checked indirectly, through the customer lookup at line 27.\n   Fix: change the signature to `getById(workspaceId, id, tx?)` and put `and(eq(invoices.workspaceId, workspaceId), eq(invoices.id, id))` in the query. Likewise scope `markPaid` and `markReceiptSent` by workspace, or by an id that was already resolved with its tenant.\n\n5. **modules/billing/service.ts:4, 22, 27 (HIGH) - cross-module import, a repository built in the service, and a read outside the transaction.**\n   - The service imports `../customers/repository.js` and does `new CustomerRepository()` on each `pay` call. Cross-module access should go through the container.\n   - `CustomerRepository.get` (customers/repository.ts:6-12) has no `tx` parameter and uses the global `db`. The customer read at line 27 therefore runs on a different connection from the invoice read in the same \"transaction\".\n   Fix: construct `CustomerRepository` in `platform/container.ts` (e.g. `container.customersRepo`) and use that. Give `get` an optional trailing `tx` parameter. If this call ends up outside the transaction after fix 1, the `tx` parameter is only needed for any remaining in-transaction read.\n\n6. **modules/billing/service.ts:2, 24 (MEDIUM) - the service imports the global `db` singleton.**\n   Transaction ownership in the service is correct. Reaching for `../../db/client.js` directly means tests cannot swap the database through `ContainerOverrides`.\n   Fix: expose the handle (or a `withTransaction` helper) from the container and use it, so the service has no db import.\n\n7. **modules/billing/service.ts:42-46, routes.ts:9-13 (MEDIUM) - `get` returns the raw Drizzle row to the client, and routes declare no `schema.response`.**\n   The wire contract mirrors the physical table. It exposes `paymentRef`, `receiptSent`, `receiptStatus` and `workspaceId`, and a column rename becomes an API break. Neither route (lines 9 and 15) declares `schema.response`, so there is no output allowlist.\n   Fix: map to a contract DTO in `modules/billing/helpers.ts` (`toInvoiceDto`) and declare `schema.response` with a zod schema on both routes.\n\n8. **modules/billing/routes.ts:11, 17 (LOW) - params are cast, not parsed through the type provider.**\n   `req.params as z.infer<typeof Params>` bypasses type inference. The schema does validate at runtime, but the cast is hand-maintained.\n   Fix: use `app.withTypeProvider<ZodTypeProvider>()` so `req.params` is typed from the schema with no cast.\n\n## Checked and not reported\n- `adapters/payments/amount.ts` is pure functions filed under `adapters/`. It is core logic by behavior, so importing it from the service is not a layering violation. Its `toMinorUnits` has a no-op factor, a correctness oddity rather than a layering problem.\n- `db/seed.ts` uses `Date.now`, `new Date` and `console.log`. Boundary scripts are exempt.\n- `adapters/payments/stripe.ts` reading `new Date(...)` from Stripe's response is legitimate adapter behavior.\n- `health/routes.ts` is a routes-only module with no DB access, which is fine.\n- The service taking the whole `Container` is the accepted existing convention.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-new_skill-run-3", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: billing module (src/ paths relative to fixtures/billing)\n\n1. **src/modules/billing/service.ts:24-39 (CRITICAL) - Stripe charge inside `db.transaction()`, and not retry/double-charge safe.**\n   `payments.charge` (line 30) is a network call made while the transaction holds a pooled connection. If `markPaid` or the commit fails, the rollback cannot undo the charge, so the customer is charged but the invoice stays `open`. A retry then charges again. There is also no idempotency key and no claim step, so two concurrent `POST /pay` calls both charge.\n   Fix: claim first with a conditional update (`open -> paying`, returning the row; only the winner continues). Call the gateway outside any transaction, passing an idempotency key (the invoice id) through the `PaymentGateway.charge` port to Stripe. Then persist the result in a short transaction (`markPaid`). Alternatively, persist a `pending` intent in the transaction and charge after commit.\n\n2. **src/modules/billing/service.ts:37 (HIGH) - `runBus.emit('invoice.paid')` inside the transaction.**\n   A rollback at line 35 or at commit does not retract the event, so subscribers see a paid invoice that does not exist.\n   Fix: return the data from the unit of work and emit after `db.transaction()` resolves.\n\n3. **src/modules/billing/service.ts:11-17 (HIGH) - Receipt job handler is not safe to run twice.**\n   The handler sends mail (line 14) and only then marks the row sent (line 15). A crash between the two, or a job retry, re-sends the receipt. The loop is also not concurrency-safe: two runs both read the same pending rows. The `receiptStatus` column (default `pending`) exists but is never used for a claim.\n   Fix: in the repository, add `claimReceipt(id)`: `UPDATE ... SET receipt_status='sending' WHERE id=$1 AND receipt_status='pending' RETURNING ...`. Send only if a row is returned. Mark it `sent` afterwards, or pass an idempotency key to the mailer. Also move the loop body into a named service method (`sendPendingReceipts()`) so the registered callback only adapts and delegates.\n\n4. **src/modules/billing/repository.ts:8-10, 13-14 (and callers service.ts:25, 43) (HIGH) - Reads and writes by id without the tenant (cross-tenant leak).**\n   `getById(id)` and `markPaid(id, ...)` have no `workspaceId` predicate. `BillingService.get(workspaceId, invoiceId)` (line 42) ignores `workspaceId` entirely, so `GET /invoices/:id` returns any tenant's invoice. In `pay`, line 25 fetches the invoice with no tenant check, and the customer lookup at line 27 is the only scoping, which is one forgotten line from disappearing.\n   Fix: change the signatures to `getById(workspaceId, id, tx?)` and `markPaid(workspaceId, id, ...)`, with `eq(invoices.workspaceId, workspaceId)` in the query. Pass `workspaceId` from the service.\n\n5. **src/modules/billing/service.ts:45 + routes.ts:12 (MEDIUM) - Drizzle row returned straight to the wire.**\n   `get` returns the raw `invoices` row. This exposes `paymentRef`, `receiptStatus`, `receiptSent` and `workspaceId`, and ties the API contract to the physical schema. The route declares no `schema.response`, so nothing strips fields.\n   Fix: add a `toInvoiceDto` in `helpers.ts` (or a shared contract type) and declare `schema.response` on both routes.\n\n6. **src/modules/billing/service.ts:4,22 (MEDIUM) - Cross-module import and per-call instantiation of `CustomerRepository`.**\n   `billing` reaches into `../customers/repository.js` and does `new CustomerRepository()` on every `pay`. That couples the modules at source level and bypasses the container.\n   Fix: construct the repository once in `platform/container.ts` (`container.customersRepo`, with an override slot) and use it from the service.\n\n7. **src/modules/billing/service.ts:2,24 + both repository.ts files (MEDIUM) - Service and repositories use the global `db` singleton.**\n   The service imports `db` from `db/client.js` to open the transaction, and the repositories import the same singleton as their default handle. Wiring bypasses the composition root, so tests cannot override the DB through `ContainerOverrides`.\n   Fix: expose the db handle (or a `withTransaction` helper) on the container. Keep the \"caller owns the transaction, repository receives `tx`\" shape. Note that `CustomerRepository.get` (line 27) is not passed `tx`, so it reads outside the unit of work. Give it the optional `tx` parameter too.\n\n8. **src/modules/billing/routes.ts:11,17 (LOW) - `req.params as z.infer<...>` casts.**\n   The cast suggests the zod type provider is not driving the handler types. Use `fastify-type-provider-zod` (`app.withTypeProvider<ZodTypeProvider>()`) so `req.params` is typed from the schema without a cast.\n\nChecked and not flagged: `adapters/payments/amount.ts` (pure functions filed under `adapters/` are core logic by behavior), `db/seed.ts` (boundary script, may use the clock and `console`), `adapters/payments/stripe.ts` (an adapter, so it may use `Date` and the SDK), and `modules/health/routes.ts` (routes-only module with no DB access).\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-new_skill-run-4", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: billing fixture\n\nPaths are relative to `src/`.\n\n1. **`modules/billing/service.ts:30-34` (inside the transaction opened at :24): the Stripe charge runs inside `db.transaction()`.**\n   - The connection and row locks are held for the whole network call. If the commit fails after the charge succeeds, the customer is charged and the invoice stays `open`. A retry then double-charges.\n   - Fix: persist intent first. In a short transaction, claim the invoice with a conditional update `open -> paying` that returns the row. Commit, then call `payments.charge(...)` and pass the invoice id as an idempotency key. Finish in a second short transaction that runs `markPaid`.\n\n2. **`modules/billing/service.ts:37`: `runBus.emit('invoice.paid')` is called inside the transaction.**\n   - A rollback after the emit leaves subscribers acting on a payment that never got recorded.\n   - Fix: collect the event while the unit of work runs and emit it after `db.transaction()` returns.\n\n3. **`modules/billing/service.ts:11-17`: the receipt job is not safe to run twice.**\n   - `mailer.send` (:14) runs before `markReceiptSent` (:15). A crash between them, or a `platform/jobs.ts` retry, sends the receipt again.\n   - There is also no claim step, so two concurrent runs both read the same `listPendingReceipts()` rows and both send.\n   - Fix: claim each row before acting, with `UPDATE ... SET receipt_status='sending' WHERE id=? AND receipt_status='pending' RETURNING ...`. Only the winner sends, then marks `sent`. Alternatively pass an idempotency key (the invoice id) to the mailer. Reset the status, or add a `failed` state, if the send throws.\n   - `repository.ts:17-23` filters on `receiptSent`, not `receiptStatus`. The `receiptStatus` column is written but never read as a claim, so the state machine is half-built.\n\n4. **`modules/billing/repository.ts:8-10`, `service.ts:25` and `service.ts:43`: `getById(id)` has no tenant predicate.**\n   - `pay()` loads any workspace's invoice by id. It only checks the workspace indirectly, on the customer lookup at :27, and that lookup uses `invoice.customerId` rather than anything the caller proved.\n   - `get()` (:42-46) accepts `workspaceId` but never uses it, so `GET /invoices/:id` is a cross-tenant read.\n   - Fix: make the signature `getById(workspaceId, id, tx?)` and put `eq(invoices.workspaceId, workspaceId)` in the query.\n\n5. **`modules/billing/repository.ts:13-15` and `:25-27`: `markPaid` and `markReceiptSent` update by `id` only.**\n   - They carry no workspace predicate, so they can write across tenants.\n   - Fix: add `workspaceId` to `markPaid`. `markReceiptSent` and `listPendingReceipts` are system-wide job paths, so either make the scope explicit or carry the workspace on the row being processed.\n\n6. **`modules/billing/service.ts:4` and `:22`: cross-module import, and the repository is built per call.**\n   - `BillingService` imports `../customers/repository.js` and does `new CustomerRepository()` on every `pay()`.\n   - Fix: construct `CustomerRepository` once in `platform/container.ts` (`container.customersRepo`, with an override slot) and read it from there. Alternatively, add a billing-owned lookup.\n\n7. **`modules/billing/service.ts:2` and `:24`: the service imports the global `db` singleton.**\n   - Transaction ownership in the service is correct, but the singleton is imported directly rather than reached through the container.\n   - Overriding the DB then means mocking modules instead of passing `ContainerOverrides`, which is the seam the architecture provides.\n   - Fix: expose `container.db` (or a `container.tx(fn)` unit-of-work helper) and use it here.\n\n8. **`modules/billing/service.ts:11-17`: the job handler holds business logic.**\n   - It loops, composes the receipt text and sequences send-then-mark. A job handler should adapt the payload and call a service method, as a route handler does.\n   - Fix: move the body into `BillingService.sendPendingReceipts()` and have the registered callback only call it. Also consider registering the job from the container or an init step instead of as a constructor side effect (:10-18), so constructing the service has no effect on `jobs`.\n\n9. **`modules/billing/service.ts:42-46`: `get()` returns the Drizzle row, and the route returns it directly (`routes.ts:12`).**\n   - The physical schema becomes the wire contract. That exposes `stripeCustomerId`-adjacent state and `paymentRef`, `receiptSent` and `receiptStatus`. No `schema.response` allowlist strips them.\n   - Fix: map to a DTO in `helpers.ts` (`toInvoiceDto`) and declare `schema.response` on both routes. `routes.ts:19` returns a `{ id, paymentRef }` result that also has no response schema.\n\n10. **`modules/billing/routes.ts:11` and `:17`: params are cast with `req.params as z.infer<typeof Params>`.**\n    - The zod schema in `schema.params` is declared, but the handler re-asserts the type by hand. This suggests `fastify-type-provider-zod` is not typing the route.\n    - Fix: register the type provider (`app.withTypeProvider<ZodTypeProvider>()`) so `req.params` is inferred and the cast goes away.\n\n11. **`modules/billing/service.ts:30`: external side effects take no idempotency key.**\n    - `StripeGateway.charge` (`adapters/payments/stripe.ts:11-18`) takes no idempotency key. The port is therefore unsafe to retry.\n    - Fix: add `idempotencyKey` to `PaymentGateway.charge`, pass `{ idempotencyKey }` as Stripe request options, and call it with the invoice id.\n\n## Checked and not flagged\n\n- `adapters/payments/amount.ts` is pure, with no I/O. Under the \"classify by behavior\" rule it is core logic that happens to sit in `adapters/`, so the service importing it is fine. It would live more naturally in `modules/billing/helpers.ts`, but that is optional. Separately, `toMinorUnits` multiplies by 1 in both branches, which looks like a logic bug, but it is not a layering problem.\n- `db/seed.ts` uses `Date.now()`, `new Date()` and `console.log`. Boundary scripts are exempt.\n- `modules/customers/repository.ts` correctly takes `workspaceId` and scopes the query.\n- `modules/health/routes.ts` is a stage-1 routes-only module with no DB access, which is acceptable.\n- `modules/_shared/context.ts` is the sanctioned place where Fastify types touch the context.\n- `platform/errors.ts` is fine. The error-handler mapping is outside this fixture.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-new_skill-run-5", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Billing module: architecture review\n\nPaths are relative to `.../evals/fixtures/billing/`.\n\n1. **`src/modules/billing/service.ts:24-39` (CRITICAL): Stripe charge inside `db.transaction()`.**\n   `payments.charge` (line 30) is a network call. It holds a pooled connection and row locks for the whole round trip. If the commit fails after Stripe succeeds, the customer is charged but the invoice stays unpaid, and the charge cannot be rolled back.\n   Fix: do not call the gateway inside the transaction.\n   - Claim the invoice first with a conditional update, `UPDATE invoices SET status='paying' WHERE id=? AND workspace_id=? AND status='open' RETURNING *`. Only the winner proceeds.\n   - Call `charge` outside any transaction, passing an idempotency key such as the invoice id. This needs a new parameter on the `PaymentGateway` port and in `StripeGateway`.\n   - Then persist the result with `markPaid` in a short transaction.\n\n2. **`src/modules/billing/service.ts:25-35` (CRITICAL): `pay` is not safe to repeat.**\n   Nothing checks `invoice.status`. A retry, a double click or a concurrent request charges the customer again, and there is no lock or claim to stop it.\n   Fix: use the claim from finding 1, and throw `ValidationError` or a conflict error when the invoice is already `paid` or `paying`.\n\n3. **`src/modules/billing/service.ts:37` (HIGH): bus event emitted inside the transaction.**\n   `runBus.emit('invoice.paid')` fires before the commit. If the transaction rolls back, subscribers have already acted on a payment that never existed.\n   Fix: return the result from the transaction (or from the short persist step) and emit after it resolves.\n\n4. **`src/modules/billing/service.ts:11-17` (CRITICAL): receipt job handler sends first and marks after, so it is not retry-safe.**\n   `mailer.send` runs on line 14 and `markReceiptSent` on line 15. A crash between them, or a retry from `platform/jobs.ts`, re-sends the email. The handler also loops over every pending row with no claim, so two overlapping runs send duplicates.\n   Fix: claim each row before sending.\n   - Run `UPDATE ... SET receipt_status='sending' WHERE receipt_status='pending' AND status='paid' RETURNING ...`.\n   - Send with an idempotency key.\n   - Then mark the row `sent`, and revert it to `pending` on failure.\n   This also removes the duplicated state in `src/db/schema.ts:17-18`. `receiptStatus` and `receiptSent` encode the same thing, so keep one.\n\n5. **`src/modules/billing/service.ts:11-17` and `src/modules/billing/repository.ts:17-26` (MEDIUM): job handler holds business logic, and the receipt queries are not tenant-scoped.**\n   The handler is a driving adapter, but here it holds the loop, the message composition and the mark-sent rule.\n   Fix: move the body into `BillingService.sendPendingReceipts()` and have the registered callback call it.\n   `listPendingReceipts` and `markReceiptSent` take no `workspaceId`. If receipts are processed per tenant they need it. If the job is intentionally global, document that.\n\n6. **`src/modules/billing/service.ts:43` and `src/modules/billing/repository.ts:8-10` (CRITICAL): cross-tenant read on `GET /invoices/:id`.**\n   `get(workspaceId, invoiceId)` ignores `workspaceId` and calls `getById(invoiceId)`. Any tenant can read any invoice by id. `pay` has the same flaw at line 25, so one tenant can charge another tenant's invoice, because the tenant check only happens on the customer lookup (line 27).\n   Fix: change the repository signature to `getById(workspaceId, id, tx?)` and put `eq(invoices.workspaceId, workspaceId)` in the query predicate. Update every caller. Also scope `markPaid` and `markReceiptSent` by workspace.\n\n7. **`src/modules/billing/service.ts:2,24` (MEDIUM): service imports the `db` singleton directly.**\n   The service reaches into the persistence layer to start the transaction, which couples it to infrastructure and bypasses the container.\n   Fix: expose a unit-of-work or `transaction(fn)` on the repository or container, wired in `platform/container.ts`. Overrides then work in tests. The service should still own the transaction boundary, but without importing `db`.\n\n8. **`src/modules/billing/service.ts:4,22` (MEDIUM): cross-module import and per-call instantiation.**\n   `billing` imports `../customers/repository.js` and does `new CustomerRepository()` on every `pay` call. This couples two modules at source level and bypasses the container.\n   Fix: construct `customerRepo` in `platform/container.ts` (with an overrides slot) and use `this.container.customerRepo`.\n\n9. **`src/modules/billing/service.ts:45`, `src/modules/billing/routes.ts:9-13` (MEDIUM): raw Drizzle row returned over the wire, and no response schema.**\n   `get` returns the `invoices` row, which includes internal fields (`paymentRef`, `receiptStatus`, `receiptSent`, `workspaceId`). This makes the API contract a mirror of the physical schema. Neither route declares `schema.response`, so nothing strips extra fields.\n   Fix: add `toInvoiceDto` in a billing `helpers.ts`, return the DTO from the service, and declare `schema.response` with a zod allowlist on both routes.\n\n10. **`src/modules/billing/routes.ts:11,17` (LOW): `req.params as z.infer<...>` casts.**\n    The routes bypass the zod type provider by casting. Register `fastify-type-provider-zod` (`app.withTypeProvider<ZodTypeProvider>()`) so `req.params` is typed from the schema without a cast.\n\nChecked and not flagged:\n- `src/adapters/payments/amount.ts` is pure code filed under `adapters/`, so it counts as core logic and the service may import it.\n- `Date`, `console` and `Date.now` in `src/db/seed.ts`, and `new Date` in `StripeGateway`, are exempt (boundary script and adapter).\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-old_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: billing fixture (onion-architecture v1.0.0)\n\nPaths relative to `.../fixtures/billing/`.\n\n1. **`src/modules/billing/service.ts:24-39` (HIGH): Stripe charge and bus event inside the DB transaction.**\n   `payments.charge()` (a network call that moves money) and `runBus.emit('invoice.paid')` both run inside `db.transaction`.\n   - If `markPaid` or the commit fails, the customer is already charged and the DB rolls back. The invoice stays `open`, and a retry charges again.\n   - The event is emitted before commit, so subscribers can see \"paid\" for an invoice that rolls back.\n   - A long Stripe call also holds a DB connection and row locks.\n   - Fix:\n     - Load and validate the invoice and customer first.\n     - Call `charge` outside any transaction, passing an idempotency key (the invoice id). Add that parameter to the `PaymentGateway` port in `vendor/shared/adapters.ts` and to `StripeGateway`.\n     - Open a short `db.transaction` that only does `markPaid`.\n     - Emit `invoice.paid` after the transaction resolves.\n     - Optionally persist a `payment_pending` state first, or use an outbox, so a crash between charge and `markPaid` can be reconciled.\n\n2. **`src/modules/billing/service.ts:42-46` and `src/modules/billing/repository.ts:8-10` (HIGH): tenancy not enforced on invoices.**\n   - `get(workspaceId, invoiceId)` ignores `workspaceId`. `getById(id)` filters by id only, so any workspace can read any invoice (cross-tenant leak).\n   - `pay()` (service.ts:25) has the same gap. The customer lookup is workspace-scoped, but the invoice lookup is not, so a workspace can pay another tenant's invoice.\n   - Fix: change to `getById(workspaceId, id, tx?)` with `and(eq(invoices.workspaceId, workspaceId), eq(invoices.id, id))`. Pass `workspaceId` from both service methods.\n\n3. **`src/modules/billing/service.ts:11-17` (HIGH): the job handler holds business logic and is not retry-safe; the constructor registers it as a side effect.**\n   - The callback is a driving adapter and should only adapt the payload and call a service method. Here it loops, composes the receipt text and sequences send then mark.\n   - `mailer.send` then `markReceiptSent` is not atomic. A crash or retry between them re-sends the receipt to the customer.\n   - One failing send aborts the rest of the batch.\n   - Registering the job inside the constructor means constructing the service has a hidden side effect.\n   - Fix:\n     - Move the body into a method such as `sendPendingReceipts()` and have the registered callback call only that.\n     - Make it idempotent: claim each row before sending (for example `UPDATE ... SET receipt_status='sending' WHERE receipt_status='pending' RETURNING`), or pass a per-invoice idempotency key to the mailer, and handle failures per row.\n     - Register the job from a container or startup hook rather than the constructor.\n\n4. **`src/modules/billing/service.ts:4,22` (MEDIUM): cross-module source import and a per-call repository.**\n   - The billing service imports `../customers/repository.js` and does `new CustomerRepository()` on every `pay()`.\n   - Cross-module access should go through the container, and a repository used by another module should be built once there.\n   - Fix: add `customerRepo` to `platform/container.ts` and `ContainerOverrides`, and use `this.container.customerRepo`. This also lets tests override it.\n\n5. **`src/modules/billing/service.ts:2,24` and `src/modules/billing/repository.ts:2,8` (MEDIUM): ambient global `db` singleton.**\n   - The service imports `db` directly to open the transaction, and the repository defaults to the global `db`.\n   - The service cannot be exercised through `ContainerOverrides`, because the DB sits outside the container.\n   - Starting the transaction in the service is correct. Obtain the handle from the container (for example `container.db` or a `container.tx(fn)` helper) instead of importing the module singleton.\n\n6. **`src/modules/billing/service.ts:45` and `src/modules/billing/routes.ts:9-12,15-20` (MEDIUM): raw Drizzle row returned, with no response schema.**\n   - `GET /invoices/:id` returns the `invoices` row as the wire contract. That exposes `paymentRef`, `receiptStatus` and `receiptSent`, and ties the API to the physical schema.\n   - Fix:\n     - Map to a DTO type from `@devdigest/shared` in `billing/helpers.ts` (for example `toInvoiceDto`), at the edge.\n     - Declare `schema.response` on both routes so the output is an allowlist.\n\n7. **`src/modules/billing/routes.ts:6-11` (LOW): the params schema is declared, but the handler re-casts `req.params` with `as z.infer<...>`.**\n   - The cast suggests `fastify-type-provider-zod` is not set up (or not used on these routes), so the handler is not getting a typed, validated value.\n   - Fix: register the zod type provider and drop the cast.\n\nReviewed and not flagged:\n- `adapters/payments/amount.ts` is pure code filed under `adapters/`. A service importing it is fine under \"classify by behavior\".\n- The `StripeGateway` shape, `health/routes.ts`, `_shared/context.ts` and `errors.ts` are fine.\n- `db/seed.ts` is dev tooling.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-old_skill-run-2", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: billing fixture\n\nPaths are relative to `fixtures/billing/`.\n\n1. **`src/modules/billing/service.ts:24-39`: the external Stripe charge runs inside `db.transaction`.**\n   - `payments.charge(...)` at line 30 is a network call to a third party. It holds a DB connection and locks open for its whole duration.\n   - A rollback cannot undo the charge. If `markPaid` (line 35) or the commit fails, the customer has been charged and the invoice is still `open`.\n   - Fix: split the work into phases.\n     - Read and validate in a short transaction or none.\n     - Call `charge` outside any transaction, passing an idempotency key derived from the invoice id.\n     - Open a short transaction only for `markPaid`.\n     - If reliable recovery is needed, persist a `charging` state first and reconcile on failure.\n\n2. **`src/modules/billing/service.ts:37`: `runBus.emit('invoice.paid')` fires inside the transaction, before the commit.**\n   - If the commit fails or rolls back, subscribers have already seen \"paid\" for an invoice that is not paid.\n   - Fix: emit after `db.transaction(...)` resolves. For delivery that must not be lost, use a transactional outbox.\n\n3. **`src/modules/billing/service.ts:20-40`: no domain invariant guards `pay`, so it can charge twice.**\n   - It never checks `invoice.status`. Calling the endpoint twice, or retrying after a timeout, charges the customer again.\n   - Fix: throw a domain error if the invoice is already `paid`, and use an idempotency key (see 1). A conditional update (`... where status = 'open'` returning the row count) also makes `markPaid` race-safe.\n\n4. **`src/modules/billing/service.ts:43` and `repository.ts:9`: invoice reads are not workspace-scoped, which is a tenancy hole.**\n   - `get()` receives `workspaceId` and ignores it. `pay()` calls `repo.getById(invoiceId, tx)` without it.\n   - Any workspace can read or pay another workspace's invoice by guessing the id. Only the customer lookup is scoped, and it is scoped by the invoice's own `customerId`.\n   - Fix: change to `getById(workspaceId, id, tx?)` and filter on `invoices.workspaceId`. This matches `CustomerRepository.get`.\n\n5. **`src/modules/billing/service.ts:2,24`: the service imports the global `db` singleton to open the transaction.**\n   - This bypasses the container. A test cannot swap the DB through `ContainerOverrides`.\n   - Fix: expose the transaction runner through the container, for example `container.db.transaction` or a `UnitOfWork`. Keep \"caller owns the transaction, repository receives the `tx`\", but inject the handle source.\n\n6. **`src/modules/billing/service.ts:4,22`: cross-module import, and the repository is instantiated per call.**\n   - `new CustomerRepository()` reaches into `../customers/` from inside `billing`, and does so on every `pay`. This couples the two modules at source level.\n   - Fix: construct `customerRepo` once in `platform/container.ts` and use `this.container.customerRepo`.\n\n7. **`src/modules/billing/service.ts:11-17`: the job handler contains the business logic.**\n   - The `jobs.register` callback loops over pending invoices, builds the email text, sends mail and marks receipts. A handler is a driving adapter. It should adapt the payload and call a service method.\n   - It is also not retry-safe. `mailer.send` (line 14) happens before `markReceiptSent` (line 15). A crash or retry between the two sends a duplicate receipt, and one failing row aborts the rest of the batch.\n   - Fix:\n     - Move the body into `sendPendingReceipts()` and keep the handler as `() => this.sendPendingReceipts()`.\n     - Claim each row before sending, for example flip `receiptStatus` to `sending` atomically.\n     - Isolate failures per row so one bad email does not stop the others.\n\n8. **`src/modules/billing/service.ts:42-46` with `routes.ts:9-13,18-19`: the API returns a raw Drizzle row, and no route declares `schema.response`.**\n   - `GET /invoices/:id` returns the whole `invoices` row. That includes `workspaceId`, `paymentRef`, `receiptSent` and `receiptStatus`, so the wire contract mirrors the physical schema.\n   - Fix: map to a contract type in `billing/helpers.ts` (a `toInvoiceDto`) and declare a zod `schema.response` on both routes as an output allowlist. Return the DTO from the service or route, not the row.\n\n## Checked and not flagged\n- `adapters/payments/amount.ts` is pure, so it counts as core logic wherever it is filed. Importing it from the service is fine.\n- `StripeGateway`, `getContext`, `errors.ts` and `health/routes.ts` are correctly placed.\n- `db/seed.ts` uses `Date.now()`, `new Date()` and `console.log`, which is acceptable in a script.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-old_skill-run-3", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Architecture review: billing fixture (onion-architecture v1.0.0)\n\nPaths are relative to `fixtures/billing/`.\n\n1. **`src/modules/billing/service.ts:24-39`: external payment call inside the DB transaction.** `payments.charge()` (Stripe, network) runs inside `db.transaction`. If `markPaid` fails or the commit fails, the DB rolls back but the card has already been charged. The transaction also holds a connection open for the duration of a network call.\n   Fix: split `pay` into three steps:\n   - Tx 1: validate the invoice and mark it `payment_pending`.\n   - Outside any tx: call `charge()` with an idempotency key derived from the invoice id.\n   - Tx 2: `markPaid`.\n   Add a reconcile path for a charge that succeeded when Tx 2 failed.\n\n2. **`src/modules/billing/service.ts:37`: event emitted inside the transaction, before commit.** `runBus.emit('invoice.paid')` fires before the commit. If the commit fails, subscribers have already been told the invoice is paid.\n   Fix: emit after `db.transaction(...)` resolves, using the value it returns.\n\n3. **`src/modules/billing/service.ts:25-27` and `repository.ts:8-10`: tenancy is not enforced, and one read is outside the tx.**\n   - `getById(id)` filters by invoice id only. `pay` and `get` (service.ts:43) accept `workspaceId` but never use it for the invoice, so any workspace can read or pay another workspace's invoice (IDOR). In `get`, `workspaceId` is an unused parameter.\n   - `customers.get(...)` at line 27 is not passed `tx`, so it runs on a different connection from the rest of the unit of work.\n   Fix:\n   - Change `getById(workspaceId, id, tx?)` to filter `and(eq(invoices.workspaceId, ...), eq(invoices.id, ...))`.\n   - Give `CustomerRepository.get` an optional `tx` parameter and pass it.\n   - Scope `markPaid` and `markReceiptSent` by workspace as well.\n\n4. **`src/modules/billing/service.ts:20-26`: missing domain invariant, so a double pay causes a double charge.** `pay` never checks `invoice.status`. A retried request or double click charges the customer again.\n   Fix: throw a `ValidationError` or conflict error if the invoice is not `open`. Combine this with the idempotency key from finding 1.\n\n5. **`src/modules/billing/service.ts:4,22`: cross-module import, and a repository built per call.** The service imports `../customers/repository.js` directly and runs `new CustomerRepository()` on every `pay`. This couples the modules at the source level and bypasses the composition root.\n   Fix: construct `customersRepo` in `platform/container.ts` (with an override slot) and use `this.container.customersRepo`.\n\n6. **`src/modules/billing/service.ts:2,24` and both repositories: the `db` singleton is imported straight into the service and repositories.** The service reaches around the container, so tests cannot inject a DB handle through `ContainerOverrides`. The repositories hard-wire the same import.\n   Fix: take the db (or a `withTransaction` helper) from the container. Keep `tx` as an optional last parameter on repositories.\n\n7. **`src/modules/billing/service.ts:11-17`: job handler holds business logic and is not retry-safe.**\n   - The loop of list, send mail, mark sent lives inside the `jobs.register` callback, in the constructor. A handler should adapt the payload and call a service method.\n   - Side effect in the constructor: every instantiation of the service registers a job.\n   - Send-then-mark is not atomic. A crash or a `markReceiptSent` failure after `send` means the retry sends a duplicate receipt.\n   - One failing mail aborts the whole batch.\n   Fix:\n   - Move the body to `BillingService.sendPendingReceipts()` and keep the callback as `() => this.sendPendingReceipts()`.\n   - Register jobs from the composition root rather than the constructor.\n   - Claim each row before sending (`pending` to `sending`, atomically) and pass an idempotency key to the mailer.\n   - Catch per row, so one failure does not abort the batch.\n\n8. **`src/db/schema.ts:17-18`: redundant, divergent state.** `receiptStatus` ('pending') and `receiptSent` (boolean) encode the same fact. The repository writes both in `markReceiptSent`, but `listPendingReceipts` filters only on `receiptSent`. They can drift apart, and the status column cannot express the `sending` state that finding 7 needs.\n   Fix: keep one column (`receiptStatus`: pending / sending / sent / failed) and drop the boolean.\n\n9. **`src/modules/billing/service.ts:42-46` and `routes.ts:12`: the Drizzle row leaks to the wire.** `get` returns the `invoices` row as-is, including `paymentRef` and `workspaceId`, and the route sends it unchanged. No `schema.response` is declared, so nothing filters the output.\n   Fix: map to a DTO in `helpers.ts` (`toInvoiceDto`) and declare `schema.response` on both routes.\n\n10. **`src/modules/billing/routes.ts:9-11,15-17`: validation is only half-wired.** `schema.params` is declared, but the handler re-casts with `req.params as z.infer<...>`. That suggests the zod type provider is not in use, so the type is asserted rather than inferred.\n    Fix: use `fastify-type-provider-zod` (`app.withTypeProvider<ZodTypeProvider>()`) so `req.params` is typed from the schema with no cast.\n\n11. **`src/adapters/payments/stripe.ts:15` and `amount.ts:1-4`: currency handling is split across the port and the adapter.**\n    - The service computes `toMinorUnits(invoice.amountCents, 'usd')` with a hard-coded currency.\n    - The adapter independently hard-codes `currency: 'usd'`.\n    - `toMinorUnits` multiplies by 1 in every case. The branch `? 1 : 100` is dead code and the function is misleading.\n    - The invoice has no currency column.\n    Fix: add `currency` to the invoice, add it to the `PaymentGateway.charge` signature, and drop `toMinorUnits` or give it a real conversion.\n    Note: `amount.ts` is pure, so living under `adapters/` is not itself a violation. Classify it by behavior.\n\n12. **`src/modules/billing/service.ts:10` (low): the new service takes the whole `Container`.** It touches `jobs`, `billingRepo`, `mailer`, `payments` and `runBus`. A new service should take only those capabilities, so its dependencies are visible in its signature.\n    Fix: use a narrow constructor, for example `{ billingRepo, customersRepo, payments, mailer, runBus, jobs, tx }`.\n\nChecked and fine:\n- `health/routes.ts` is a routes-only module with no logic.\n- `_shared/context.ts` is the sanctioned place where Fastify is adapted.\n- `stripe.ts` keeps the SDK types inside the adapter and implements a port.\n- `db/seed.ts` is a script outside the layering.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-old_skill-run-4", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Billing module: architecture review\n\nPaths are relative to `fixtures/billing/`.\n\n1. **`src/modules/billing/service.ts:24-39`: Stripe charge and event emit inside the DB transaction.**\n   - `payments.charge(...)` (line 30) is a network call made inside `db.transaction`. If `markPaid` (line 35) or the commit fails, the customer has been charged but the DB rolls back to \"open\". A retry then charges again, because no idempotency key is passed.\n   - `runBus.emit('invoice.paid')` (line 37) fires before the commit, so it can outlive a rollback.\n   - Fix:\n     - Keep the transaction short. Read and validate first, then call the gateway outside any tx, passing an idempotency key such as the invoice id.\n     - Open the tx only for `markPaid`.\n     - Emit the event after the tx resolves.\n     - If delivery must be guaranteed, write an outbox row in the same tx instead.\n\n2. **`src/modules/billing/service.ts:2,22,24`, `service.ts:4`: service reaches around the container.**\n   - It imports the `db` singleton directly and starts the transaction on it.\n   - It imports a sibling module's file (`../customers/repository.js`) and does `new CustomerRepository()` per call.\n   - Fix:\n     - Construct `customersRepo` in `platform/container.ts` and use `this.container.customersRepo`.\n     - Get the tx runner from the container or the repository (e.g. a `withTransaction` helper) instead of importing `db`.\n   - This keeps cross-module access a wiring decision and makes the service testable via `ContainerOverrides`.\n\n3. **`src/modules/billing/service.ts:42-46`, `repository.ts:8-11`, `service.ts:25`: invoice reads are not workspace-scoped (tenant leak).**\n   - `get(workspaceId, invoiceId)` ignores `workspaceId`.\n   - `getById` filters only on `invoices.id`, so any workspace can read or pay another workspace's invoice by UUID.\n   - `pay` has the same hole at line 25. Only the customer lookup is scoped, and the invoice's own `customerId` is trusted.\n   - Fix: change to `getById(workspaceId, id, tx?)` with `and(eq(invoices.workspaceId, workspaceId), eq(invoices.id, id))`, and pass `workspaceId` from both service methods.\n\n4. **`src/modules/billing/service.ts:45`, `routes.ts:9-13`: raw Drizzle row returned to the wire, with no response schema.**\n   - `get` returns the `invoices` row, which exposes `paymentRef`, `receiptStatus`, `receiptSent` and `workspaceId`. The wire contract mirrors the physical schema.\n   - No route declares `schema.response`, so nothing strips fields.\n   - Fix:\n     - Map to a contract DTO (e.g. `toInvoiceDto` in `helpers.ts`) at the edge.\n     - Declare `schema.response` on both routes.\n\n5. **`src/modules/billing/service.ts:11-17`: business logic inside the job handler, registered in the constructor.**\n   - The loop (list pending, send mail, mark sent) is the work itself, not an adapter calling a service.\n   - Registering in the constructor makes construction a side effect.\n   - Fix: move the body into a method such as `sendPendingReceipts()`. The `jobs.register` callback should only call it. Do the registration from the composition root or an explicit `init`.\n\n6. **`src/modules/billing/service.ts:14-15`, `repository.ts:17-27`: receipt job is not retry-safe.**\n   - Mail is sent (line 14) before `markReceiptSent` (line 15). A crash or failure between them re-sends the receipt on the next run.\n   - A failure on one row aborts the rest of the batch.\n   - Two overlapping runs can both read the same pending rows and double-send.\n   - Fix:\n     - Claim the row first with an atomic `UPDATE ... SET receipt_status='sending' WHERE receipt_sent=false AND receipt_status='pending' RETURNING`.\n     - Send with a per-invoice idempotency key.\n     - Mark `sent` or `failed` per row, with try/catch so one failure does not stop the batch.\n\n7. **`src/modules/billing/routes.ts:11,17`: `req.params as z.infer<...>` bypasses the validation seam.**\n   - The zod schema is passed to Fastify with no zod type provider, so the cast is the only typing.\n   - Fix: register `fastify-type-provider-zod` and use `app.withTypeProvider<ZodTypeProvider>()`. Then `req.params` is typed from `schema.params` and the cast goes away.\n\n8. **`src/adapters/payments/stripe.ts:15` vs `src/modules/billing/service.ts:32`, `amount.ts:1-4`: currency is hard-coded and the port has no currency.**\n   - The service computes `toMinorUnits(..., 'usd')`, but `StripeGateway.charge` takes no currency and hard-codes `'usd'`. A `'eur'` invoice would be charged in USD.\n   - `toMinorUnits` is a no-op: the factor is always 1 on the only reachable branch. It also takes cents and returns \"minor units\", which are the same thing.\n   - Fix:\n     - Add `currency` to the `PaymentGateway.charge` signature in `vendor/shared/adapters.ts` and pass it through.\n     - Store currency on the invoice.\n     - Delete `toMinorUnits`.\n   - Vendor-mirror reminder: `vendor/shared` is hand-copied to the client, so port the delta there too.\n\nNot flagged, since they are not violations under the skill:\n- `amount.ts` is a pure file under `adapters/`. Classify it by behaviour, so it is core logic and the service may import it.\n- `seed.ts` is a script.\n- `health/routes.ts` is a legitimate routes-only module.\n- `_shared/context.ts` is the sanctioned Fastify-adaptation point.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}, {"id": "eval-hidden-side-effects-billing-old_skill-run-5", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "findings.md", "type": "text", "content": "# Billing module: architecture review (onion-architecture v1.0.0)\n\nPaths are relative to `.../fixtures/billing/src/`.\n\n1. **`modules/billing/service.ts:24-39` (HIGH): the Stripe charge and the `runBus.emit` happen inside `db.transaction`.**\n   - `payments.charge` is an irreversible network call, and it runs before `markPaid`. If `markPaid` or the commit fails, the DB rolls back but the customer has already been charged, and the invoice stays `open`.\n   - `runBus.emit('invoice.paid')` at line 37 fires before the commit. A rollback leaves subscribers holding an event for a payment that never persisted (the skill's \"events emitted before the write commits can outlive a rollback\").\n   - The transaction also stays open for the whole Stripe round trip.\n   - Fix:\n     - Read and validate the invoice first. Call `charge` outside any transaction, with an idempotency key such as the invoice id.\n     - Then open a short transaction that only does `markPaid` (plus any other DB writes).\n     - Emit `invoice.paid` after the commit returns.\n     - If the charge must be reconciled, mark the invoice `charging` first, or use an outbox.\n   - Related gap: `pay` never checks `invoice.status === 'paid'` (line 26). A double POST or a retry charges the customer twice. Add the guard as a domain invariant, and pass an idempotency key into `PaymentGateway.charge` / `StripeGateway` (`adapters/payments/stripe.ts:12`).\n\n2. **`modules/billing/service.ts:11-17` (HIGH): the job handler holds business logic, and it is not retry-safe.**\n   - The `jobs.register` callback loops over rows, builds the email text, sends the mail and marks the receipt as sent. A handler is a driving adapter and should only adapt the payload and call a service method.\n   - If `mailer.send` succeeds and `markReceiptSent` (line 15) fails or the process dies, the retry sends a duplicate email, because the row is still `receiptSent=false`. Send and mark are not atomic, and a single failure aborts the rest of the loop.\n   - Fix: register `() => this.sendPendingReceipts()` and move the loop into that service method. Make each row idempotent: claim the row first (`receiptStatus: 'sending'`, conditional update), send with a stable idempotency key such as the invoice id, then mark it sent. Handle failures per row.\n   - Also, `receiptSent` and `receiptStatus` (`db/schema.ts:17-18`) are two columns for one fact, and `markReceiptSent` (`billing/repository.ts:26`) has to keep them in sync. Collapse them into one.\n\n3. **`modules/billing/service.ts:43` and `modules/billing/repository.ts:8-10,13-15` (HIGH): tenancy is dropped for invoices.**\n   - `get(workspaceId, invoiceId)` ignores `workspaceId`. `getById(id)` and `markPaid(id, ...)` filter on `id` only.\n   - Any workspace can read and pay another workspace's invoice. `pay` scopes the customer lookup but not the invoice lookup (line 25).\n   - Fix: make `workspaceId` a repository argument (`getById(workspaceId, id, tx?)`, `markPaid(workspaceId, id, ...)`) and filter on `and(eq(invoices.workspaceId, ws), eq(invoices.id, id))`, the way `CustomerRepository.get` already does.\n\n4. **`modules/billing/service.ts:2,22,24` and `modules/customers/repository.ts:2` (MEDIUM): global `db` and a cross-module import bypass the container.**\n   - The service imports the `db` singleton directly and calls `db.transaction`. It also does `import ... from '../customers/repository.js'` and `new CustomerRepository()` per call. The skill says cross-module access goes through the container (`container.customersRepo`), and a repository used by a second module should be constructed in the container.\n   - `CustomerRepository` and `BillingRepository` both import the global `db`, so tests cannot inject a DB or handle.\n   - Fix:\n     - Add `customersRepo` to `platform/container.ts` and `ContainerOverrides`, and use `this.container.customersRepo`.\n     - Expose the transaction through the container (for example `container.db` or a `withTransaction` helper) instead of importing `db` in the service.\n     - Have the repositories take the handle as a constructor argument.\n\n5. **`modules/billing/service.ts:42-46` with `modules/billing/routes.ts:12` (MEDIUM): a Drizzle row is returned straight over the wire, and there is no response schema.**\n   - `get` returns the raw `invoices` row (`paymentRef`, `receiptStatus`, `receiptSent`, `workspaceId`, and so on). The wire contract mirrors the physical schema, so a column rename becomes an API break.\n   - Neither route declares `schema.response`, so there is no output allowlist.\n   - Fix: add `toInvoiceDto` in `billing/helpers.ts` and map at the edge. Add shared Zod contracts and `schema.response` on both routes.\n\n6. **`modules/billing/routes.ts:9,11,15,17` (LOW): casting instead of typed params.**\n   - `req.params as z.infer<typeof Params>` bypasses the type provider. The raw `{ params: Params }` schema only works if `fastify-type-provider-zod` and its compilers are set up, and the cast hides whether they are.\n   - Fix: use `app.withTypeProvider<ZodTypeProvider>()` so `req.params` is typed and the cast goes away.\n\n7. **`modules/billing/service.ts:9-10` (LOW): the service takes the whole `Container`.**\n   - It uses only `jobs`, `billingRepo`, `mailer`, `payments` and `runBus`. This is accepted for existing services, but a new service should take the capabilities it uses so its dependencies are visible in its signature.\n   - Registering the job inside the constructor also means constructing the service has a side effect. Move registration into the composition root or an explicit `init`, so tests that construct the service do not register jobs.\n"}], "grading": {"expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "onion-architecture", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-10-06T06:51:18Z", "evals_run": [5], "runs_per_configuration": 3}, "runs": [{"eval_id": 5, "configuration": "new_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 43.4, "tokens": 72576, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "new_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 51.1, "tokens": 73644, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "new_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 46.1, "tokens": 73117, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "new_skill", "run_number": 4, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 46.3, "tokens": 73239, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "new_skill", "run_number": 5, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 47.2, "tokens": 72742, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "old_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 50.3, "tokens": 70819, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "old_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 44.7, "tokens": 70363, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "old_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 62.7, "tokens": 72839, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "old_skill", "run_number": 4, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 49.1, "tokens": 71260, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}, {"eval_id": 5, "configuration": "old_skill", "run_number": 5, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 50.3, "tokens": 71214, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)", "passed": true, "evidence": "service.ts:24-39 charge inside db.transaction"}, {"text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)", "passed": true, "evidence": "receipt job sends before markReceiptSent, not retry-safe"}, {"text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit", "passed": true, "evidence": "runBus.emit inside the transaction"}, {"text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)", "passed": true, "evidence": "service.ts:4,22 imports ../customers/repository and new CustomerRepository()"}, {"text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)", "passed": true, "evidence": "getById(id)/get() ignore workspaceId (cross-tenant)"}, {"text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)", "passed": true, "evidence": "raw invoices row returned, no schema.response"}, {"text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log", "passed": true, "evidence": "db/seed.ts not flagged (listed as exempt or omitted)"}, {"text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter", "passed": true, "evidence": "amount.ts / Stripe new Date not flagged as layering violation"}, {"text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)", "passed": true, "evidence": "health/routes.ts not flagged"}], "notes": []}], "run_summary": {"new_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 46.82, "stddev": 2.7815, "min": 43.4, "max": 51.1}, "tokens": {"mean": 73063.6, "stddev": 421.8001, "min": 72576, "max": 73644}}, "old_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 51.42, "stddev": 6.7136, "min": 44.7, "max": 62.7}, "tokens": {"mean": 71299.0, "stddev": 933.6544, "min": 70363, "max": 72839}}, "delta": {"pass_rate": "+0.00", "time_seconds": "-4.6", "tokens": "+1765"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

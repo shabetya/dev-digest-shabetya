@@ -1,0 +1,35 @@
+{
+  "eval_id": 5,
+  "eval_name": "hidden-side-effects-billing",
+  "prompt": "I'm about to open a PR for the backend modules in /Users/vadymshabetia/dev-digest-shabetya/.claude/skills/onion-architecture/evals/fixtures/billing/ (a Fastify + Drizzle + Postgres API; paths under src/). Review them for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+  "assertions": [
+    {
+      "text": "P1: Flags the external payment call (payments.charge) made inside db.transaction in BillingService.pay (connection/locks held over a network call; effect can't roll back)"
+    },
+    {
+      "text": "P2: Flags the receipt job handler as not retry-safe/idempotent (email sent before markReceiptSent; a crash or retry re-sends)"
+    },
+    {
+      "text": "P3: Flags runBus.emit('invoice.paid') firing inside the transaction before commit"
+    },
+    {
+      "text": "P4: Flags billing/service.ts importing ../customers/repository.js directly and constructing CustomerRepository (cross-module access should go via the container)"
+    },
+    {
+      "text": "P5: Flags BillingRepository.getById(id) / BillingService.get ignoring workspaceId (cross-tenant read; id-only lookup)"
+    },
+    {
+      "text": "P6: Flags GET /invoices/:id returning the raw Drizzle invoice row (no DTO / response schema)"
+    },
+    {
+      "text": "TRAP-1: Does NOT flag db/seed.ts for Date.now()/new Date()/console.log"
+    },
+    {
+      "text": "TRAP-2: Does NOT flag adapters/payments/amount.ts as a layering violation (pure code under adapters/) and does NOT flag new Date() in the Stripe adapter"
+    },
+    {
+      "text": "TRAP-3: Does NOT flag modules/health/routes.ts (routes-only module with no business rule is legitimate)"
+    }
+  ],
+  "runs_per_config": 5
+}

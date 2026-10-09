@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Flags NotificationsService constructing the Slack SDK client directly with no port/adapter",
+      "passed": true,
+      "evidence": "#1 SDK in service, port + adapter + fake"
+    },
+    {
+      "text": "Flags direct process.env.SLACK_BOT_TOKEN read in the service instead of SecretsProvider",
+      "passed": true,
+      "evidence": "#2 process.env token, use container.secrets"
+    },
+    {
+      "text": "Flags the import of ../users/service.js from the notifications module (cross-module coupling; should go via container)",
+      "passed": true,
+      "evidence": "#3 cross-module import, go through container"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+      "passed": true,
+      "evidence": "8 findings; #7 is a real config bug, #8 low"
+    },
+    {
+      "text": "Fixes use repo mechanisms: token via SecretsProvider/container.secrets, port + adapter + mocks.ts double, cross-module access through the container",
+      "passed": true,
+      "evidence": "same repo mechanisms as old_skill"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

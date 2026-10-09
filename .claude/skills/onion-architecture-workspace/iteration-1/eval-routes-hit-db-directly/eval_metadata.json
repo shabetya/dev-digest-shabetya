@@ -1,0 +1,22 @@
+{
+  "eval_id": 1,
+  "eval_name": "routes-hit-db-directly",
+  "prompt": "I'm about to open a PR for the backend module in /Users/vadymshabetia/dev-digest-shabetya/.claude/skills/onion-architecture/evals/fixtures/bookmarks/ (a Fastify + Drizzle + Postgres API; paths under src/). Review it for architecture / layering problems. Read all the files, then give me a numbered list of findings, each with file:line, what is wrong, and the concrete fix. Only report real problems; don't pad the list.",
+  "assertions": [
+    {
+      "text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)"
+    },
+    {
+      "text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)"
+    },
+    {
+      "text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems"
+    },
+    {
+      "text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone"
+    }
+  ]
+}

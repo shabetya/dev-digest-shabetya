@@ -10,6 +10,12 @@ vi.mock("../../../../../../../lib/hooks/reviews", () => ({
 
 import { FindingsPanel } from "./FindingsPanel";
 
+// FindingCard embeds the "Turn into eval case" button (SPEC-04); stub its hook so
+// these renders don't need a QueryClient.
+vi.mock("../../../../../../../lib/hooks/eval", () => ({
+  useTurnIntoEvalCase: () => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false }),
+}));
+
 afterEach(cleanup);
 
 const FINDINGS: FindingRecord[] = [

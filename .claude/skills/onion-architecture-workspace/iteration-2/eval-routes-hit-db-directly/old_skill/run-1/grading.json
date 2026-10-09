@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Flags routes.ts issuing Drizzle queries / importing db + schema directly (no repository)",
+      "passed": true,
+      "evidence": "#1 routes.ts:2,4,5 direct drizzle/db queries"
+    },
+    {
+      "text": "Flags raw Drizzle rows being returned from handlers as the API response (no DTO mapping / contract type)",
+      "passed": true,
+      "evidence": "#2 routes.ts:15,28,38 Drizzle rows returned"
+    },
+    {
+      "text": "Flags the hand-built 404 reply body instead of throwing NotFoundError from platform/errors.ts",
+      "passed": true,
+      "evidence": "#3 routes.ts:25-27 hand-built 404, use NotFoundError"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+      "passed": true,
+      "evidence": "5 findings, all in-scope"
+    },
+    {
+      "text": "Fix follows repo conventions: DB code moves to modules/bookmarks/repository.ts wired via the container, and the sanctioned getContext helper is left alone",
+      "passed": true,
+      "evidence": "repository.ts via container.bookmarksRepo; getContext listed as 'sanctioned exception'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

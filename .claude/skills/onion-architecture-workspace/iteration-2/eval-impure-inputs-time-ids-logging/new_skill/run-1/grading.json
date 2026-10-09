@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the service/helper reading the current time directly (Date.now() in helpers.ts isDue / new Date() in service.ts) instead of an injected Clock / `now` argument",
+      "passed": true,
+      "evidence": "#2 service.ts:25 new Date(); #3 helpers.ts:13 Date.now() -> isDue(row, now)"
+    },
+    {
+      "text": "Flags randomUUID() generated inside RemindersService.create instead of an injected IdGenerator (or DB-side default)",
+      "passed": true,
+      "evidence": "#4 randomUUID() -> IdGenerator or DB defaultRandom"
+    },
+    {
+      "text": "Flags console.log in RemindersService.dispatchDue instead of an injected logger, noting the user email being logged",
+      "passed": true,
+      "evidence": "#1 console.log + PII -> injected Logger"
+    },
+    {
+      "text": "Reports no more than ~2 clearly unrelated/noisy findings beyond the 3 planted problems",
+      "passed": true,
+      "evidence": "14 findings; #13, #14 tangential; rest are real unplanted fixture defects"
+    },
+    {
+      "text": "Fixes name the repo mechanisms: Clock port in vendor/shared/adapters.ts with FixedClock in adapters/mocks.ts wired via container/ContainerOverrides; pure helper takes `now` as an argument",
+      "passed": true,
+      "evidence": "#2 Clock in vendor/shared/adapters.ts, SystemClock, FixedClock in mocks.ts, ContainerOverrides slot; #3 passes now"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}
