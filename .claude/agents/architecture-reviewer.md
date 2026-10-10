@@ -209,3 +209,5 @@ with `## Scope reviewed` — no preamble, no "analysis" section before it.
 ```
 
 Omit an empty severity heading's bullets by writing `- none`.
+
+<!-- CI test: touch agent -->

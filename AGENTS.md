@@ -74,3 +74,5 @@ packages — e.g. `server` imports `reviewer-core/src` directly.
 | [specs/README.md](specs/README.md) | writing a spec for a feature whose own goals require changes in more than one package — single-package specs go in that package's own `specs/` instead |
 | a package's own `AGENTS.md` (linked in the table above) | you're about to touch files inside that package |
 | a package's `docs/` / `specs/` / `INSIGHTS.md` | see that package's own `AGENTS.md` — same "use when" pattern, one level down |
+
+<!-- CI test: touch CLAUDE.md -->
