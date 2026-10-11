@@ -1,4 +1,4 @@
 /** Constants for AppShell (extracted magic values). */
 
-/** Window (ms) to press the second key of a `g`-then-key navigation chord. */
+/** Window (ms) to press the second key of a `g`-then-key navigation chord (e.g. `g` then `p`). */
 export const G_NAV_TIMEOUT_MS = 1200;

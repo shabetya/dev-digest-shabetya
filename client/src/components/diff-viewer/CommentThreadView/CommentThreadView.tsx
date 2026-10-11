@@ -20,6 +20,10 @@ export function CommentThreadView({
 }) {
   const t = useTranslations("shell");
   const [replying, setReplying] = React.useState(false);
+
+  /*TODO: Delete me*/
+  console.log('CommentThreadView rendered', { thread, replying });
+
   return (
     <div style={cs.thread}>
       {thread.comments.map((c) => (
