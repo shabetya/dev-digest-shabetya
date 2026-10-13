@@ -131,6 +131,25 @@ d('Testcontainers: DB-backed routes via app.inject', () => {
     await app.close();
   });
 
+  it('GET /repos/:id/branches lists GitHub branch names, falling back to default_branch offline', async () => {
+    const config = loadConfig({ ...process.env, NODE_ENV: 'test' } as NodeJS.ProcessEnv);
+    const app = await buildApp({
+      config,
+      db: pg.handle.db,
+      overrides: {
+        git: new MockGitClient(),
+        github: new MockGitHubClient({ branches: [{ name: 'main' }, { name: 'develop' }] }),
+      },
+    });
+    const repos = await app.inject({ method: 'GET', url: '/repos' });
+    const repoId = repos.json()[0]!.id;
+
+    const res = await app.inject({ method: 'GET', url: `/repos/${repoId}/branches` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual(['main', 'develop']);
+    await app.close();
+  });
+
   it('POST /repos/:id/poll syncs PR list and does NOT trigger a review', async () => {
     const config = loadConfig({ ...process.env, NODE_ENV: 'test' } as NodeJS.ProcessEnv);
     const app = await buildApp({

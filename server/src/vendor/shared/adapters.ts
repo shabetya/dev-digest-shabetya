@@ -140,6 +140,34 @@ export interface CommitFilesPayload {
   files: CommitFile[];
 }
 
+/** A GitHub Actions workflow run (list-workflow-runs-for-a-repository). */
+export interface WorkflowRunMeta {
+  id: number;
+  name: string | null;
+  headSha: string;
+  headBranch: string | null;
+  event: string;
+  status: string | null;
+  conclusion: string | null;
+  createdAt: string;
+  htmlUrl: string;
+  /** PR numbers GitHub associates with this run (present for `pull_request`-triggered runs). */
+  pullRequests: number[];
+}
+
+/** One uploaded artifact on a workflow run (list-workflow-run-artifacts). */
+export interface WorkflowArtifactMeta {
+  id: number;
+  name: string;
+  sizeInBytes: number;
+  expired: boolean;
+}
+
+/** One branch (list-branches-for-a-repository). */
+export interface BranchMeta {
+  name: string;
+}
+
 export interface GitHubClient {
   listPullRequests(repo: RepoRef): Promise<PrMeta[]>;
   getPullRequest(repo: RepoRef, n: number): Promise<PrDetail>;
@@ -164,6 +192,19 @@ export interface GitHubClient {
   getIssue(repo: RepoRef, n: number): Promise<IssueMeta>;
   /** GET /user — for "posting as @user". */
   currentLogin(): Promise<string>;
+  /**
+   * Recent GitHub Actions workflow runs for `repo`, newest first (AC-15's
+   * Refresh ingestion lists these to find new `devdigest-result.json`
+   * artifacts). Not scoped to a single workflow file — the caller filters by
+   * event/branch/etc. as needed.
+   */
+  listWorkflowRuns(repo: RepoRef, opts?: { perPage?: number }): Promise<WorkflowRunMeta[]>;
+  /** Artifacts uploaded by one workflow run. */
+  listWorkflowRunArtifacts(repo: RepoRef, runId: number): Promise<WorkflowArtifactMeta[]>;
+  /** Raw zip bytes of one artifact (GitHub always wraps an uploaded artifact in a zip). */
+  downloadArtifact(repo: RepoRef, artifactId: number): Promise<Buffer>;
+  /** Branches for `repo` (list-branches-for-a-repository), newest-API-order (no particular sort guaranteed). */
+  listBranches(repo: RepoRef): Promise<BranchMeta[]>;
 }
 
 // ---------- Git (simple-git, heavy) ----------

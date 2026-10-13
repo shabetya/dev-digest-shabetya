@@ -33,6 +33,7 @@ export const NAV: NavGroup[] = [
       { key: "skills", label: "Skills", icon: "Sparkles", href: "/skills", gKey: "s" },
       { key: "agents", label: "Agents", icon: "Cpu", href: "/agents", gKey: "a" },
       { key: "eval", label: "Eval Dashboard", icon: "FlaskConical", href: "/eval" },
+      { key: "ci-runs", label: "CI Runs", icon: "Play", href: "/ci-runs" },
       {
         key: "conventions",
         label: "Conventions",

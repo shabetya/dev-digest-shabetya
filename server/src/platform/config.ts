@@ -33,6 +33,12 @@ const EnvSchema = z.object({
   // automatic pre-work call and the explicit "Re-evaluate" endpoint, e.g. for
   // a workspace that wants zero extra spend from a configured OPENROUTER_API_KEY.
   INTENT_ENABLED: z.string().optional(),
+  // "owner/name" of THIS devdigest repo (not the target repo being exported
+  // to) — baked into the generated workflow's second `actions/checkout` so
+  // it can pull `agent-runner/dist/` (SPEC-05 Export to CI). This repo is
+  // assumed public, per that spec's resolved clarifications, so no extra
+  // credential is needed for that checkout.
+  DEVDIGEST_REPO: z.string().default('your-org/devdigest'),
   API_PORT: z.coerce.number().int().default(3001),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
@@ -72,6 +78,8 @@ export type AppConfig = {
    * automatic pre-work call, and the explicit re-evaluate endpoint refuses).
    */
   intentEnabled: boolean;
+  /** "owner/name" of this devdigest repo — see SPEC-05 Export to CI. */
+  devdigestRepo: string;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -91,5 +99,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
     intentEnabled: parsed.INTENT_ENABLED !== 'false',
+    devdigestRepo: parsed.DEVDIGEST_REPO,
   };
 }

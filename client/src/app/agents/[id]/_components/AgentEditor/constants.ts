@@ -7,11 +7,12 @@ export interface EditorTab {
   icon: IconName;
 }
 
-/** Editor tabs. Part-0 shipped Config only; Skills is now wired up too —
-    Evals is wired up (SPEC-04); Stats/CI stay reserved for later lessons. */
+/** Editor tabs. Part-0 shipped Config only; Skills, Evals (SPEC-04), and now
+    CI (SPEC-05) are wired up; Stats stays reserved for a later lesson. */
 export const TABS: readonly EditorTab[] = [
   { key: "config", labelKey: "editor.tabs.config", icon: "Settings" },
   { key: "skills", labelKey: "editor.tabs.skills", icon: "Sparkles" },
   { key: "context", labelKey: "editor.tabs.context", icon: "FileText" },
   { key: "evals", labelKey: "editor.tabs.evals", icon: "FlaskConical" },
+  { key: "ci", labelKey: "editor.tabs.ci", icon: "Workflow" },
 ];
