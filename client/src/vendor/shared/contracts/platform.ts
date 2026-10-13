@@ -292,6 +292,10 @@ export type AttachContextBody = z.infer<typeof AttachContextBody>;
 export const RunRequest = z.object({
   agentId: z.string().optional(),
   all: z.boolean().optional(),
+  /** Explicit subset of agent IDs (Multi-Agent Review, SPEC-05) — mutually
+   *  exclusive with `agentId`/`all`; the server rejects a request supplying
+   *  more than one of the three (400 `invalid_run_request`). */
+  agentIds: z.array(z.string()).optional(),
 });
 export type RunRequest = z.infer<typeof RunRequest>;
 

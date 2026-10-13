@@ -43,19 +43,48 @@ export class ReviewService {
   // ===========================================================================
 
   /**
-   * Resolve which agents to run. `all` → all enabled agents; else a single agent.
+   * Resolve which agents to run: `all` → all enabled agents; `agentId` → one
+   * agent; `agentIds` → an explicit subset (Multi-Agent Review, SPEC-05).
+   * Exactly one of the three must be supplied — a request naming more than
+   * one is rejected (400 `invalid_run_request`, AC-9) rather than silently
+   * preferring one. An `agentIds` request where any id fails to resolve in
+   * this workspace is rejected whole (404 `agent_not_found`, AC-10) — never a
+   * partial run of just the subset that did resolve.
    */
   async resolveTargets(
     workspaceId: string,
-    opts: { agentId?: string; all?: boolean },
+    opts: { agentId?: string; all?: boolean; agentIds?: string[] },
   ): Promise<AgentRow[]> {
+    const modesSupplied = [opts.agentId !== undefined, opts.all === true, opts.agentIds !== undefined]
+      .filter(Boolean).length;
+    if (modesSupplied > 1) {
+      throw new AppError('invalid_run_request', 'Provide only one of agentId, all, or agentIds', 400);
+    }
+
     if (opts.all) return this.agents.listEnabled(workspaceId);
+
+    if (opts.agentIds) {
+      if (opts.agentIds.length === 0) {
+        throw new AppError('invalid_run_request', 'agentIds must not be empty', 400);
+      }
+      const rows = await this.agents.getByIds(workspaceId, opts.agentIds);
+      if (rows.length !== opts.agentIds.length) {
+        throw new AppError(
+          'agent_not_found',
+          'One or more agent IDs were not found in this workspace',
+          404,
+        );
+      }
+      return rows;
+    }
+
     if (opts.agentId) {
       const agent = await this.agents.getById(workspaceId, opts.agentId);
       if (!agent) throw new NotFoundError('Agent not found');
       return [agent];
     }
-    throw new AppError('invalid_run_request', 'Provide agentId or all:true', 400);
+
+    throw new AppError('invalid_run_request', 'Provide agentId, all:true, or agentIds', 400);
   }
 
   /** Delete a whole review run (one agent's pass) + its findings (cascade). */
@@ -101,17 +130,36 @@ export class ReviewService {
    * (= agent_runs.id) created up-front so the SSE route can be subscribed
    * before/while the run progresses. A partial failure in one agent does not
    * abort the others.
+   *
+   * When 2+ agents are targeted (Multi-Agent Review, SPEC-05), a single
+   * `multi_agent_runs` row is created BEFORE the fan-out and its id is
+   * threaded into every `createAgentRun` call below — `ReviewRunExecutor`'s
+   * own per-agent isolated fan-out (`executeRuns`) is unchanged; only the
+   * runId-creation call sites here know about the multi-run.
    */
   async runReview(
     workspaceId: string,
     prId: string,
     targets: AgentRow[],
     logger?: Logger,
-  ): Promise<{ runs: { run_id: string; agent_id: string; agent_name: string }[]; reviews: ReviewDto[] }> {
+  ): Promise<{
+    runs: { run_id: string; agent_id: string; agent_name: string }[];
+    reviews: ReviewDto[];
+    multi_run_id: string | null;
+  }> {
     const pull = await this.repo.getPull(workspaceId, prId);
     if (!pull) throw new NotFoundError('Pull request not found');
     const repo = await this.repo.getRepo(pull.repoId);
     if (!repo) throw new NotFoundError('Repo not found');
+
+    let multiAgentRunId: string | null = null;
+    if (targets.length >= 2) {
+      multiAgentRunId = await this.repo.createMultiAgentRun(
+        workspaceId,
+        prId,
+        targets.map((a) => ({ agent_id: a.id, agent_name: a.name })),
+      );
+    }
 
     // Create the agent_run rows up front so a runId is available IMMEDIATELY —
     // the client persists these in global state and subscribes to the SSE
@@ -125,6 +173,7 @@ export class ReviewService {
         prId,
         provider: agent.provider,
         model: agent.model,
+        multiAgentRunId,
       });
       runs.push({ run_id: runId, agent_id: agent.id, agent_name: agent.name });
       jobs.push({ agent, runId });
@@ -136,7 +185,7 @@ export class ReviewService {
       logger?.error({ prId, err: (err as Error).message }, 'review: background execution crashed');
     });
 
-    return { runs, reviews: [] };
+    return { runs, reviews: [], multi_run_id: multiAgentRunId };
   }
 
   private publish(runId: string, kind: RunEventKind, msg: string, data?: unknown) {

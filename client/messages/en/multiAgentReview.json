@@ -1,0 +1,49 @@
+{
+  "configureRun": {
+    "breadcrumbLab": "Multi-Agent Review",
+    "breadcrumb": "Configure Run",
+    "title": "Configure multi-agent review",
+    "step1Title": "1. Choose a pull request",
+    "step1RepoLabel": "Repository",
+    "step1PrLabel": "Pull request",
+    "step1NoRepos": "No repos yet — import one to get started.",
+    "step1NoPrs": "No pull requests imported for this repo yet.",
+    "step2Title": "2. Pick agents to run",
+    "step2Disabled": "Choose a pull request first.",
+    "selectAll": "Select all",
+    "noAgentsTitle": "No agents yet",
+    "noAgentsBody": "Create an agent before configuring a multi-agent run.",
+    "noAgentsCta": "Create one",
+    "runButton": "Run multi-agent review ({count})",
+    "estimateLine": "≈ {time} · {cost} · parallel fan-out",
+    "noHistoryYet": "no history yet"
+  },
+  "results": {
+    "breadcrumbLab": "Multi-Agent Review",
+    "breadcrumb": "Run",
+    "viewColumns": "Columns",
+    "viewTabs": "Tabs",
+    "viewTrace": "View trace & logs for {agent}",
+    "running": "Running…",
+    "runDeleted": "This agent's run was deleted",
+    "scoreLabel": "Score",
+    "conflictsTitle": "Where agents disagree",
+    "showOnlyConflicts": "Show only conflicts",
+    "noConflicts": "No disagreements to show.",
+    "noConflictsFiltered": "Every agent agrees at every flagged location.",
+    "conflictsPending": "Waiting for more agents to finish before comparing findings…",
+    "ignoredVerdict": "Did not flag this",
+    "learnComingSoon": "Coming soon — part of the Memory feature",
+    "noFindings": "No findings from this agent.",
+    "detail": {
+      "confidence": "Confidence",
+      "suggestedFix": "Suggested fix",
+      "accept": "Accept",
+      "dismiss": "Dismiss",
+      "learn": "Learn",
+      "evalCase": "Turn into eval case"
+    },
+    "loadError": "Couldn’t load this multi-agent run",
+    "notFound": "This multi-agent run doesn’t exist or belongs to another workspace."
+  }
+}

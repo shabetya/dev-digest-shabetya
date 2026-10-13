@@ -24,6 +24,7 @@ import * as pullRepo from './repository/pull.repo.js';
 import * as priorPrsRepo from './repository/prior-prs.repo.js';
 import type { PriorPr } from '@devdigest/shared';
 export type { IntentUpsert } from './repository/pull.repo.js';
+export type { MultiAgentRunDetail, MultiAgentColumnData } from './repository/run.repo.js';
 
 export class ReviewRepository {
   constructor(private db: Db) {}
@@ -165,8 +166,40 @@ export class ReviewRepository {
     prId: string;
     provider: string | null;
     model: string | null;
+    multiAgentRunId?: string | null;
   }): Promise<string> {
     return runRepo.createAgentRun(this.db, values);
+  }
+
+  // ---- Multi-Agent Review (SPEC-05) --------------------------------------
+
+  /** Create a `multi_agent_runs` row (one "Run multi-agent review" click),
+   *  snapshotting the targeted agents. Returns its id. */
+  createMultiAgentRun(
+    workspaceId: string,
+    prId: string,
+    targetAgents: { agent_id: string; agent_name: string }[],
+  ): Promise<string> {
+    return runRepo.createMultiAgentRun(this.db, { workspaceId, prId, targetAgents });
+  }
+
+  /** Workspace-scoped combined detail (multi-run + every tagged agent_runs
+   *  row, incl. "run deleted" placeholders) for `GET /multi-agent-runs/:id`. */
+  getMultiAgentRunDetail(
+    workspaceId: string,
+    multiRunId: string,
+  ): Promise<runRepo.MultiAgentRunDetail | undefined> {
+    return runRepo.getMultiAgentRunDetail(this.db, workspaceId, multiRunId);
+  }
+
+  /** The agent's 10 most recent `status='done'` runs — the AC-22 estimate
+   *  window (workspace-scoped, no time cutoff). */
+  recentDoneRunsForAgent(
+    workspaceId: string,
+    agentId: string,
+    limit: number,
+  ): Promise<{ durationMs: number | null; costUsd: number | null }[]> {
+    return runRepo.recentDoneRunsForAgent(this.db, workspaceId, agentId, limit);
   }
 
   completeAgentRun(
