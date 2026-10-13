@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: shabetya/dev-digest-shabetya
-          ref: 819637017b452fb755a24562b32db266e652b2b5
+          ref: aa74221b06a1cf80ba79edae37c1d51b8eb7bc41
           path: .devdigest-runner
       - name: Setup Node
         uses: actions/setup-node@v4
