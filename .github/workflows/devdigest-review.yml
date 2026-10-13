@@ -17,8 +17,8 @@ jobs:
       - name: Checkout devdigest (agent-runner)
         uses: actions/checkout@v4
         with:
-          repository: shabetya/dev-digest-shabetya
-          ref: aa74221b06a1cf80ba79edae37c1d51b8eb7bc41
+          repository: your-org/devdigest
+          ref: 0464f05d0aa6666cac4058635afe588080431f70
           path: .devdigest-runner
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -29,8 +29,8 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AGENT_MANIFEST_PATH: .devdigest/agents/general-reviewer.yaml
-          POST_AS: github_review
+          AGENT_MANIFEST_PATH: .devdigest/agents/performance-reviewer.yaml
+          POST_AS: pr_comment
       - name: Upload result artifact
         if: always()
         uses: actions/upload-artifact@v4
