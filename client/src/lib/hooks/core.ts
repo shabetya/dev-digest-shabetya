@@ -77,6 +77,15 @@ export function useAddRepo() {
   });
 }
 
+/** Branch names for a repo (GET /repos/:id/branches) — used by the CI Export Wizard's base-branch picker. */
+export function useRepoBranches(repoId: string | undefined) {
+  return useQuery({
+    queryKey: ["repo-branches", repoId],
+    queryFn: () => api.get<string[]>(`/repos/${repoId}/branches`),
+    enabled: Boolean(repoId),
+  });
+}
+
 export function useRefreshRepo() {
   const qc = useQueryClient();
   return useMutation({

@@ -11,6 +11,9 @@ import type {
   OpenPrPayload,
   CommitFilesPayload,
   IssueMeta,
+  WorkflowRunMeta,
+  WorkflowArtifactMeta,
+  BranchMeta,
 } from '@devdigest/shared';
 import { withRetry, withTimeout } from '../../platform/resilience.js';
 
@@ -368,5 +371,93 @@ export class OctokitGitHubClient implements GitHubClient {
       withTimeout(this.octokit.rest.users.getAuthenticated(), TIMEOUT),
     );
     return res.data.login;
+  }
+
+  async listWorkflowRuns(
+    repo: RepoRef,
+    opts?: { perPage?: number },
+  ): Promise<WorkflowRunMeta[]> {
+    return withRetry(() =>
+      withTimeout(
+        (async () => {
+          const res = await this.octokit.rest.actions.listWorkflowRunsForRepo({
+            owner: repo.owner,
+            repo: repo.name,
+            per_page: opts?.perPage ?? 30,
+          });
+          return res.data.workflow_runs.map((r) => ({
+            id: r.id,
+            name: r.name ?? null,
+            headSha: r.head_sha,
+            headBranch: r.head_branch ?? null,
+            event: r.event,
+            status: r.status ?? null,
+            conclusion: r.conclusion ?? null,
+            createdAt: r.created_at,
+            htmlUrl: r.html_url,
+            pullRequests: (r.pull_requests ?? []).map((p) => p.number),
+          }));
+        })(),
+        TIMEOUT,
+      ),
+    );
+  }
+
+  async listWorkflowRunArtifacts(repo: RepoRef, runId: number): Promise<WorkflowArtifactMeta[]> {
+    return withRetry(() =>
+      withTimeout(
+        (async () => {
+          const res = await this.octokit.rest.actions.listWorkflowRunArtifacts({
+            owner: repo.owner,
+            repo: repo.name,
+            run_id: runId,
+            per_page: 100,
+          });
+          return res.data.artifacts.map((a) => ({
+            id: a.id,
+            name: a.name,
+            sizeInBytes: a.size_in_bytes,
+            expired: a.expired,
+          }));
+        })(),
+        TIMEOUT,
+      ),
+    );
+  }
+
+  async downloadArtifact(repo: RepoRef, artifactId: number): Promise<Buffer> {
+    return withRetry(() =>
+      withTimeout(
+        (async () => {
+          const res = await this.octokit.rest.actions.downloadArtifact({
+            owner: repo.owner,
+            repo: repo.name,
+            artifact_id: artifactId,
+            archive_format: 'zip',
+          });
+          // Octokit follows the redirect for us and returns the raw bytes as
+          // an ArrayBuffer when `archive_format: 'zip'` is requested.
+          const data = res.data as unknown as ArrayBuffer;
+          return Buffer.from(data);
+        })(),
+        TIMEOUT,
+      ),
+    );
+  }
+
+  async listBranches(repo: RepoRef): Promise<BranchMeta[]> {
+    return withRetry(() =>
+      withTimeout(
+        (async () => {
+          const res = await this.octokit.rest.repos.listBranches({
+            owner: repo.owner,
+            repo: repo.name,
+            per_page: 100,
+          });
+          return res.data.map((b) => ({ name: b.name }));
+        })(),
+        TIMEOUT,
+      ),
+    );
   }
 }
