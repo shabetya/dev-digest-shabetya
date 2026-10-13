@@ -347,4 +347,102 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     expect(body.runs.length).toBeGreaterThanOrEqual(2);
     await app.close();
   });
+
+  it('agentIds mode runs exactly the requested subset and creates one multi_agent_runs row (AC-8/11)', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agentA = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'MA-A', provider: 'openai', model: 'gpt-4.1', system_prompt: 's' },
+      })
+    ).json();
+    const agentB = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'MA-B', provider: 'openai', model: 'gpt-4.1', system_prompt: 's' },
+      })
+    ).json();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/pulls/${pr.id}/review`,
+      payload: { agentIds: [agentA.id, agentB.id] },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.runs).toHaveLength(2);
+    expect(body.runs.map((r: { agent_id: string }) => r.agent_id).sort()).toEqual(
+      [agentA.id, agentB.id].sort(),
+    );
+    expect(body.multi_run_id).toBeTruthy();
+
+    // Every created agent_runs row is tagged with the same multi_agent_run_id.
+    const runs = await pg.handle.db
+      .select()
+      .from(t.agentRuns)
+      .where(eq(t.agentRuns.prId, pr.id));
+    expect(runs.every((r) => r.multiAgentRunId === body.multi_run_id)).toBe(true);
+
+    await app.close();
+  });
+
+  it('a single-agent run has no multi_run_id (AC-11 only applies to 2+ targets)', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Solo', provider: 'openai', model: 'gpt-4.1', system_prompt: 's' },
+      })
+    ).json();
+    const body = (
+      await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } })
+    ).json();
+    expect(body.multi_run_id).toBeNull();
+    await app.close();
+  });
+
+  it('rejects a run request naming more than one of agentId/all/agentIds (AC-9)', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const res = await app.inject({
+      method: 'POST',
+      url: `/pulls/${pr.id}/review`,
+      payload: { all: true, agentIds: ['x'] },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('invalid_run_request');
+    await app.close();
+  });
+
+  it('rejects the whole agentIds request 404 when one id does not resolve (AC-10)', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Known', provider: 'openai', model: 'gpt-4.1', system_prompt: 's' },
+      })
+    ).json();
+    const res = await app.inject({
+      method: 'POST',
+      url: `/pulls/${pr.id}/review`,
+      payload: { agentIds: [agent.id, '00000000-0000-0000-0000-000000000000'] },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('agent_not_found');
+
+    // All-or-nothing: no agent_runs row was created for the resolvable agent either.
+    const runs = await pg.handle.db
+      .select()
+      .from(t.agentRuns)
+      .where(eq(t.agentRuns.prId, pr.id));
+    expect(runs).toHaveLength(0);
+    await app.close();
+  });
 });

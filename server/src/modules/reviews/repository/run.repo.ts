@@ -1,7 +1,8 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db, Tx } from '../../../db/client.js';
 import * as t from '../../../db/schema.js';
 import type { RunSummary, RunTrace } from '@devdigest/shared';
+import type { FindingRow } from '../../../db/rows.js';
 
 // ---- in-flight / history --------------------------------------------------
 
@@ -128,6 +129,9 @@ export async function createAgentRun(
     prId: string;
     provider: string | null;
     model: string | null;
+    /** The multi_agent_runs row this run was fanned out from (2+ agent
+     *  targets); omitted/null for a single-agent run. */
+    multiAgentRunId?: string | null;
   },
 ): Promise<string> {
   const [row] = await db
@@ -140,9 +144,136 @@ export async function createAgentRun(
       model: values.model,
       status: 'running',
       source: 'local',
+      multiAgentRunId: values.multiAgentRunId ?? null,
     })
     .returning({ id: t.agentRuns.id });
   return row!.id;
+}
+
+// ---- Multi-Agent Review (SPEC-05) -----------------------------------------
+
+/** Create a `multi_agent_runs` row for one "Run multi-agent review" click,
+ *  snapshotting the targeted agents so a later individually-deleted
+ *  `agent_runs` row can still be rendered as a placeholder (see
+ *  `target_agents` column doc). Returns its id. */
+export async function createMultiAgentRun(
+  db: Db,
+  values: {
+    workspaceId: string;
+    prId: string;
+    targetAgents: { agent_id: string; agent_name: string }[];
+  },
+): Promise<string> {
+  const [row] = await db
+    .insert(t.multiAgentRuns)
+    .values({
+      workspaceId: values.workspaceId,
+      prId: values.prId,
+      targetAgents: values.targetAgents,
+    })
+    .returning({ id: t.multiAgentRuns.id });
+  return row!.id;
+}
+
+/** One multi-run's resolved column data: the snapshot entry, its live
+ *  `agent_runs` row (null when that row was individually hard-deleted via
+ *  `DELETE /runs/:id` after being tagged — the "run deleted" placeholder
+ *  case), and that run's persisted findings (empty when there's no run, or
+ *  the run never reached a persisted review). */
+export interface MultiAgentColumnData {
+  agentId: string;
+  agentName: string;
+  run: (typeof t.agentRuns.$inferSelect) | null;
+  findings: FindingRow[];
+}
+
+export interface MultiAgentRunDetail {
+  id: string;
+  prId: string;
+  ranAt: Date;
+  columns: MultiAgentColumnData[];
+}
+
+/**
+ * Workspace-scoped join of one multi-run + every `agent_runs` row still
+ * tagged with it, left-joined against the `target_agents` snapshot (iterated
+ * from the snapshot, not the live rows) so an agent whose run was later
+ * hard-deleted still produces a column (`run: null`) rather than silently
+ * disappearing. Returns undefined when the multi-run doesn't exist or isn't
+ * in this workspace.
+ */
+export async function getMultiAgentRunDetail(
+  db: Db,
+  workspaceId: string,
+  multiRunId: string,
+): Promise<MultiAgentRunDetail | undefined> {
+  const [row] = await db
+    .select()
+    .from(t.multiAgentRuns)
+    .where(and(eq(t.multiAgentRuns.workspaceId, workspaceId), eq(t.multiAgentRuns.id, multiRunId)));
+  if (!row) return undefined;
+
+  const snapshot = (row.targetAgents as { agent_id: string; agent_name: string }[]) ?? [];
+
+  const runs = await db
+    .select()
+    .from(t.agentRuns)
+    .where(
+      and(eq(t.agentRuns.workspaceId, workspaceId), eq(t.agentRuns.multiAgentRunId, multiRunId)),
+    );
+  const runByAgentId = new Map(runs.filter((r) => r.agentId).map((r) => [r.agentId as string, r]));
+
+  const runIds = runs.map((r) => r.id);
+  const reviews = runIds.length
+    ? await db.select().from(t.reviews).where(inArray(t.reviews.runId, runIds))
+    : [];
+  const reviewIds = reviews.map((r) => r.id);
+  const findingRows = reviewIds.length
+    ? await db.select().from(t.findings).where(inArray(t.findings.reviewId, reviewIds))
+    : [];
+  const findingsByRunId = new Map<string, FindingRow[]>();
+  for (const review of reviews) {
+    if (!review.runId) continue;
+    const existing = findingsByRunId.get(review.runId) ?? [];
+    existing.push(...findingRows.filter((f) => f.reviewId === review.id));
+    findingsByRunId.set(review.runId, existing);
+  }
+
+  const columns: MultiAgentColumnData[] = snapshot.map((target) => {
+    const run = runByAgentId.get(target.agent_id) ?? null;
+    return {
+      agentId: target.agent_id,
+      agentName: target.agent_name,
+      run,
+      findings: run ? findingsByRunId.get(run.id) ?? [] : [],
+    };
+  });
+
+  return { id: row.id, prId: row.prId, ranAt: row.ranAt, columns };
+}
+
+/** The agent's 10 most recent `status='done'` runs (workspace-scoped, no
+ *  time cutoff) — the historical window AC-22's cost/time estimate is
+ *  computed from. Excludes failed/cancelled/running rows explicitly so a
+ *  naive "all runs" query can't pollute the median with 0/null-cost rows. */
+export async function recentDoneRunsForAgent(
+  db: Db,
+  workspaceId: string,
+  agentId: string,
+  limit: number,
+): Promise<{ durationMs: number | null; costUsd: number | null }[]> {
+  return db
+    .select({ durationMs: t.agentRuns.durationMs, costUsd: t.agentRuns.costUsd })
+    .from(t.agentRuns)
+    .where(
+      and(
+        eq(t.agentRuns.workspaceId, workspaceId),
+        eq(t.agentRuns.agentId, agentId),
+        eq(t.agentRuns.status, 'done'),
+      ),
+    )
+    .orderBy(desc(t.agentRuns.ranAt))
+    .limit(limit);
 }
 
 export async function completeAgentRun(

@@ -127,6 +127,13 @@
       "when": 1791357731722,
       "tag": "0017_typical_wolverine",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791746941459,
+      "tag": "0018_complex_glorian",
+      "breakpoints": true
     }
   ]
 }

@@ -34,10 +34,17 @@
   "runReview": {
     "runAll": "Run all enabled agents",
     "configureAgents": "Configure agents…",
+    "configureRun": "Configure run…",
     "running": "Running…",
     "runReview": "Run Review",
     "mergedWarning": "Already merged — review is informational",
-    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code."
+    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code.",
+    "pickAgents": "Pick agents to run",
+    "selectAll": "Select all",
+    "runMultiAgentReview": "Run multi-agent review ({count})",
+    "singleAgentStarted": "Review started — watch the Findings tab for progress.",
+    "noHistoryYet": "no history yet",
+    "noAgentsYet": "No agents yet — create one"
   },
   "runStatus": {
     "elapsed": "Running · {count} agent(s)",

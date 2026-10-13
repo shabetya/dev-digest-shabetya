@@ -124,20 +124,24 @@ export function useCreatePrComment(prId: string | null | undefined) {
   });
 }
 
-// ---- Run a review (all enabled agents or a specific agent) ----
+// ---- Run a review (all enabled agents, a specific agent, or an explicit subset) ----
 export interface RunReviewInput {
   prId: string;
   agentId?: string;
   all?: boolean;
+  /** Explicit subset of agent IDs (Multi-Agent Review, SPEC-05) — mutually
+     exclusive with `agentId`/`all`; the server 400s on more than one. */
+  agentIds?: string[];
 }
 
 export function useRunReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ prId, agentId, all }: RunReviewInput) =>
+    mutationFn: ({ prId, agentId, all, agentIds }: RunReviewInput) =>
       api.post<ReviewRunResponse>(`/pulls/${prId}/review`, {
         ...(agentId ? { agentId } : {}),
         ...(all ? { all } : {}),
+        ...(agentIds ? { agentIds } : {}),
       }),
     onSuccess: (_d, { prId }) => {
       qc.invalidateQueries({ queryKey: ["reviews", prId] });
@@ -166,6 +170,10 @@ export function useFindingAction() {
       ),
     onSuccess: (_d, { prId }) => {
       if (prId) qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      // Multi-Agent Review's results page (SPEC-05) renders the same
+      // findings via a differently-keyed query (`multi-agent-run`); drop it
+      // too so an accept/dismiss there reflects without a manual reload.
+      qc.invalidateQueries({ queryKey: ["multi-agent-run"] });
     },
   });
 }

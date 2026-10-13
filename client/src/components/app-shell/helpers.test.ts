@@ -8,4 +8,9 @@ describe("activeKeyFor", () => {
     expect(activeKeyFor("/repos/abc-123/pulls")).toBe("pulls");
     expect(activeKeyFor("/repos/abc-123/context")).toBe("context");
   });
+
+  it("maps the configure-run and multi-agent-review routes to the Multi-Agent Review item", () => {
+    expect(activeKeyFor("/configure-run")).toBe("multi-agent");
+    expect(activeKeyFor("/multi-agent-review/run-123")).toBe("multi-agent");
+  });
 });

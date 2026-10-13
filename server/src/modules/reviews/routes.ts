@@ -1,17 +1,18 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { RunRequest } from '@devdigest/shared';
+import { MultiAgentRun, RunRequest } from '@devdigest/shared';
 import type { RunEvent } from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
 import { NotFoundError } from '../../platform/errors.js';
 import { ReviewService } from './service.js';
 import { IntentService } from './intent-service.js';
+import { MultiAgentRunService } from './multi-agent-service.js';
 import { getSmartDiff } from './smart-diff/service.js';
 
 /**
  * reviews module.
- *   POST   /pulls/:id/review  {agentId} | {all:true}  → run review(s); returns runs
+ *   POST   /pulls/:id/review  {agentId} | {all:true} | {agentIds:[...]}  → run review(s); returns runs
  *   GET    /runs/:id/events                            → SSE stream of RunEvent (replay-first)
  *   GET    /runs/:id/trace                             → the single-document RunTrace
  *   GET    /pulls/:id/reviews                          → persisted reviews + findings for a PR
@@ -19,6 +20,7 @@ import { getSmartDiff } from './smart-diff/service.js';
  *   GET    /pulls/:id/intent                           → persisted Intent Layer record (or null)
  *   POST   /pulls/:id/intent/extract                   → recompute + persist Intent (Re-evaluate)
  *   GET    /pulls/:id/smart-diff                       → files grouped by role (Smart Diff), with inline finding lines
+ *   GET    /multi-agent-runs/:id                       → combined {columns, conflicts} for one multi-agent run (SPEC-05)
  */
 const FINDING_ACTIONS = ['accept', 'dismiss'] as const;
 export default async function reviewsRoutes(appBase: FastifyInstance) {
@@ -26,28 +28,47 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
   const { container } = app;
   const service = new ReviewService(container);
   const intentService = new IntentService(container);
+  const multiAgentService = new MultiAgentRunService(container);
 
   // ---- Run a review (manual trigger) -------------------------------
   // Tight per-route limit: each call can fan out to expensive LLM runs.
   // Body stays a tolerant manual parse (both fields optional; empty body is OK).
+  // NOTE: no `response` schema here — ReviewDto.verdict is `string | null`
+  // (looser than ReviewRunResponse's `Verdict | null`, a pre-existing
+  // mismatch unrelated to this spec), so declaring one trips a real
+  // TS error that would require widening that DTO's type, out of scope here.
   app.post(
     '/pulls/:id/review',
-    { schema: { params: IdParams }, config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    {
+      schema: { params: IdParams },
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    },
     async (req) => {
     const { workspaceId } = await getContext(container, req);
     const body = RunRequest.parse(req.body ?? {});
     const targets = await service.resolveTargets(workspaceId, {
       ...(body.agentId !== undefined ? { agentId: body.agentId } : {}),
       ...(body.all !== undefined ? { all: body.all } : {}),
+      ...(body.agentIds !== undefined ? { agentIds: body.agentIds } : {}),
     });
-    const { runs, reviews } = await service.runReview(
+    const { runs, reviews, multi_run_id } = await service.runReview(
       workspaceId,
       req.params.id,
       targets,
       req.log,
     );
-    return { pr_id: req.params.id, runs, reviews };
+    return { pr_id: req.params.id, runs, reviews, multi_run_id };
   });
+
+  // ---- Multi-Agent Review: combined detail (columns + conflicts) ---------
+  app.get(
+    '/multi-agent-runs/:id',
+    { schema: { params: IdParams, response: { 200: MultiAgentRun } } },
+    async (req) => {
+      const { workspaceId } = await getContext(container, req);
+      return multiAgentService.getDetail(workspaceId, req.params.id);
+    },
+  );
 
   // ---- SSE: live run events (replay buffer first, then live; ends on done) -
   // No rate limit: SSE is one long-lived connection, not burst traffic.

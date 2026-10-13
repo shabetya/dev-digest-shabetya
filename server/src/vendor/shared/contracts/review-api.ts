@@ -53,6 +53,9 @@ export const ReviewRunResponse = z.object({
   pr_id: z.string(),
   runs: z.array(ReviewRunTarget),
   reviews: z.array(ReviewRecord),
+  /** The `multi_agent_runs.id` this click created, when 2+ agents were
+   *  targeted (Multi-Agent Review, SPEC-05); null for a single-agent run. */
+  multi_run_id: z.string().nullable(),
 });
 export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
 
