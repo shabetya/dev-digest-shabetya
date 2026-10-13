@@ -1,6 +1,7 @@
 import type { Container } from '../../platform/container.js';
 import type {
   Agent,
+  AgentEstimate,
   AgentSkillLink,
   AgentVersion,
   CiFailOn,
@@ -9,8 +10,9 @@ import type {
   ReviewStrategy,
 } from '@devdigest/shared';
 import { AgentsRepository } from './repository.js';
-import { toAgentDto, toAgentVersionDto } from './helpers.js';
+import { toAgentDto, toAgentEstimate, toAgentVersionDto } from './helpers.js';
 import { validateAttachPaths } from '../_shared/attach-paths.js';
+import { RECENT_RUNS_WINDOW } from './constants.js';
 
 /**
  * A2 — agents service. Business logic for the Agents tab + Agent Editor.
@@ -194,6 +196,31 @@ export class AgentsService {
     const resolvedOrder = order ?? existing.length;
     await this.repo.linkSkill(agentId, skillId, resolvedOrder);
     return this.skillLinks(agentId);
+  }
+
+  /**
+   * Per-agent + combined cost/time estimates (AC-22/23) for every agent in
+   * the workspace, computed from each agent's AC-22 historical window in
+   * parallel (`Promise.all`, not N sequential round-trips — the picker must
+   * not add noticeable latency to opening the dropdown). Uses
+   * `container.reviewRepo` — the DI container's lazy getter — since
+   * `agent_runs` is owned by the reviews module, not a cross-module folder
+   * import.
+   */
+  async estimates(workspaceId: string): Promise<AgentEstimate[]> {
+    const agents = await this.repo.list(workspaceId);
+    const reviewRepo = this.container.reviewRepo;
+    const estimates = await Promise.all(
+      agents.map(async (agent) => {
+        const runs = await reviewRepo.recentDoneRunsForAgent(
+          workspaceId,
+          agent.id,
+          RECENT_RUNS_WINDOW,
+        );
+        return toAgentEstimate(agent.id, agent.name, runs);
+      }),
+    );
+    return estimates;
   }
 
   /**

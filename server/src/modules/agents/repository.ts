@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { Db, Tx } from '../../db/client.js';
 import * as t from '../../db/schema.js';
 import type { CiFailOn, Provider, ReviewStrategy } from '@devdigest/shared';
@@ -68,6 +68,21 @@ export class AgentsRepository {
       .from(t.agents)
       .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.id, id)));
     return row;
+  }
+
+  /**
+   * Batch lookup for an explicit subset of agent IDs (Multi-Agent Review,
+   * SPEC-05's `agentIds` run-request mode). One query, workspace-scoped; a
+   * caller-supplied id outside the workspace (or that doesn't exist) is
+   * simply absent from the result — the caller (`resolveTargets`) is
+   * responsible for detecting a shorter result than requested (AC-10).
+   */
+  async getByIds(workspaceId: string, ids: string[]): Promise<AgentRow[]> {
+    if (ids.length === 0) return [];
+    return this.db
+      .select()
+      .from(t.agents)
+      .where(and(eq(t.agents.workspaceId, workspaceId), inArray(t.agents.id, ids)));
   }
 
   /** Delete an agent (scoped to workspace). Versions/skill-links cascade;

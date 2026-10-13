@@ -1,4 +1,11 @@
-import type { Agent, AgentVersion, CiFailOn, Provider, ReviewStrategy } from '@devdigest/shared';
+import type {
+  Agent,
+  AgentEstimate,
+  AgentVersion,
+  CiFailOn,
+  Provider,
+  ReviewStrategy,
+} from '@devdigest/shared';
 import { AgentVersionConfig } from '@devdigest/shared';
 import type { AgentRow, AgentVersionRow } from './repository.js';
 
@@ -83,4 +90,35 @@ export function isConfigChange(
     (patch.repoIntel !== undefined && patch.repoIntel !== existing.repoIntel) ||
     patch.outputSchema !== undefined
   );
+}
+
+/** Median of a non-empty numeric array (linear interpolation not needed for
+ *  this use — an even-length array averages its two middle values). */
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!;
+}
+
+/**
+ * Build one agent's AC-22/23 cost/time estimate from its recent `done` runs'
+ * `(durationMs, costUsd)` pairs. Each field's median is computed only over
+ * the rows where that field is non-null — a run can have a known duration
+ * but an unknown cost (or vice versa) — and is null ("no history yet") when
+ * there are no such rows, never a fabricated 0.
+ */
+export function toAgentEstimate(
+  agentId: string,
+  agentName: string,
+  runs: { durationMs: number | null; costUsd: number | null }[],
+): AgentEstimate {
+  const durations = runs.map((r) => r.durationMs).filter((d): d is number => d != null);
+  const costs = runs.map((r) => r.costUsd).filter((c): c is number => c != null);
+  return {
+    agent_id: agentId,
+    agent_name: agentName,
+    median_duration_ms: durations.length > 0 ? Math.round(median(durations)) : null,
+    median_cost_usd: costs.length > 0 ? median(costs) : null,
+    sample_size: runs.length,
+  };
 }

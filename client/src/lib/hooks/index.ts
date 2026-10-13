@@ -12,3 +12,4 @@ export * from "./intent";
 export * from "./onboarding";
 export * from "./brief";
 export * from "./eval";
+export * from "./multi-agent";
