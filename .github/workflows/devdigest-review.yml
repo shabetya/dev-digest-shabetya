@@ -30,7 +30,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENT_MANIFEST_PATH: .devdigest/agents/pr-self-review.yaml
-          POST_AS: pr_comment
+          POST_AS: github_review
       - name: Upload result artifact
         if: always()
         uses: actions/upload-artifact@v4
