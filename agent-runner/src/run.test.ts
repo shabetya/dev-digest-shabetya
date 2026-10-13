@@ -198,6 +198,31 @@ describe('agent-runner run()', () => {
     expect(result.exitCode).toBe(0);
   });
 
+  it('downgrades a clean review (no findings) from APPROVE to COMMENT — GitHub 422s on an APPROVE from the Actions GITHUB_TOKEN', async () => {
+    const fixture = writeFixtureRepo();
+    dirs.push(fixture.workspaceDir);
+    const calls = stubFetch();
+    const llm = new MockLLMProvider({
+      structured: { verdict: 'approve', summary: 'looks good', score: 95, findings: [] },
+    });
+
+    await run({
+      workspaceDir: fixture.workspaceDir,
+      manifestPath: fixture.manifestPath,
+      eventPath: fixture.eventPath,
+      postAs: 'github_review',
+      openrouterApiKey: undefined,
+      githubToken: 'gh-token',
+      resultPath: fixture.resultPath,
+      llm,
+    });
+
+    const reviewPost = calls.find((c) => c.url.includes('/reviews'));
+    expect(reviewPost).toBeTruthy();
+    const body = JSON.parse(reviewPost!.init!.body as string);
+    expect(body.event).toBe('COMMENT');
+  });
+
   it('wraps branch name and PR comments as untrusted data before they reach the model (AC-11)', async () => {
     const fixture = writeFixtureRepo();
     dirs.push(fixture.workspaceDir);

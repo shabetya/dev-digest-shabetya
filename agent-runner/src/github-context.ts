@@ -138,12 +138,19 @@ export async function postReview(
   token: string,
   review: GitHubReviewPayload,
 ): Promise<void> {
+  // GitHub categorically rejects an APPROVE review submitted with a
+  // workflow's own ephemeral `GITHUB_TOKEN` (422 "GitHub Actions is not
+  // permitted to approve pull requests") — a hard platform restriction to
+  // stop a workflow from self-approving its own PR, not something a repo
+  // setting can turn off. `toReviewPayload`'s body text ("Approved ✅") still
+  // reflects the clean-review verdict; only the review `event` downgrades.
+  const event = review.event === 'APPROVE' ? 'COMMENT' : review.event;
   await githubFetch(`/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}/reviews`, token, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       body: review.body,
-      event: review.event,
+      event,
       comments: review.comments,
     }),
   });
