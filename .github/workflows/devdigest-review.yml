@@ -1,0 +1,40 @@
+name: DevDigest Review
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+      - name: Checkout devdigest (agent-runner)
+        uses: actions/checkout@v4
+        with:
+          repository: your-org/devdigest
+          ref: 0464f05d0aa6666cac4058635afe588080431f70
+          path: .devdigest-runner
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run DevDigest review
+        run: node .devdigest-runner/agent-runner/dist/index.js
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_MANIFEST_PATH: .devdigest/agents/performance-reviewer.yaml
+          POST_AS: pr_comment
+      - name: Upload result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devdigest-result
+          path: devdigest-result.json
+          if-no-files-found: ignore
