@@ -1,0 +1,3 @@
+node_modules/
+# dist/ is a COMMITTED build output (@vercel/ncc) consumed directly by the
+# generated GitHub Actions workflow's second checkout — never ignore it.

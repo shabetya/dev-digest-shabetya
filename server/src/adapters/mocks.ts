@@ -17,6 +17,9 @@ import type {
   OpenPrPayload,
   CommitFilesPayload,
   IssueMeta,
+  WorkflowRunMeta,
+  WorkflowArtifactMeta,
+  BranchMeta,
   GitClient,
   CloneOptions,
   UnifiedDiff,
@@ -128,6 +131,14 @@ export interface MockGitHubOptions {
   login?: string;
   /** Existing inline review comments returned by listReviewComments. */
   comments?: PrReviewComment[];
+  /** Fixture workflow runs returned by listWorkflowRuns. */
+  workflowRuns?: WorkflowRunMeta[];
+  /** Fixture artifacts returned by listWorkflowRunArtifacts, keyed by run id. */
+  artifactsByRunId?: Record<number, WorkflowArtifactMeta[]>;
+  /** Fixture zip bytes returned by downloadArtifact, keyed by artifact id. */
+  artifactZipById?: Record<number, Buffer>;
+  /** Fixture branches returned by listBranches. */
+  branches?: BranchMeta[];
 }
 
 export class MockGitHubClient implements GitHubClient {
@@ -239,6 +250,22 @@ export class MockGitHubClient implements GitHubClient {
 
   async currentLogin(): Promise<string> {
     return this.opts.login ?? 'mock-user';
+  }
+
+  async listWorkflowRuns(_repo: RepoRef): Promise<WorkflowRunMeta[]> {
+    return this.opts.workflowRuns ?? [];
+  }
+
+  async listWorkflowRunArtifacts(_repo: RepoRef, runId: number): Promise<WorkflowArtifactMeta[]> {
+    return this.opts.artifactsByRunId?.[runId] ?? [];
+  }
+
+  async downloadArtifact(_repo: RepoRef, artifactId: number): Promise<Buffer> {
+    return this.opts.artifactZipById?.[artifactId] ?? Buffer.alloc(0);
+  }
+
+  async listBranches(_repo: RepoRef): Promise<BranchMeta[]> {
+    return this.opts.branches ?? [{ name: 'main' }];
   }
 }
 

@@ -141,4 +141,22 @@ export class RepoService {
     const ok = await this.repo.remove(workspaceId, id);
     if (!ok) throw new NotFoundError('Repo not found');
   }
+
+  /**
+   * Branch names for the CI export wizard's "Base branch" picker. Local-first:
+   * never fails the read when GitHub is unreachable (no token / offline) —
+   * falls back to just the repo's own default branch.
+   */
+  async listBranches(workspaceId: string, id: string): Promise<string[]> {
+    const repo = await this.repo.getById(workspaceId, id);
+    if (!repo) throw new NotFoundError('Repo not found');
+
+    try {
+      const gh = await this.container.github();
+      const branches = await gh.listBranches({ owner: repo.owner, name: repo.name });
+      return branches.map((b) => b.name);
+    } catch {
+      return [repo.defaultBranch];
+    }
+  }
 }

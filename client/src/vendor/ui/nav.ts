@@ -33,6 +33,7 @@ export const NAV: NavGroup[] = [
       { key: "skills", label: "Skills", icon: "Sparkles", href: "/skills", gKey: "s" },
       { key: "agents", label: "Agents", icon: "Cpu", href: "/agents", gKey: "a" },
       { key: "eval", label: "Eval Dashboard", icon: "FlaskConical", href: "/eval" },
+      { key: "ci-runs", label: "CI Runs", icon: "Play", href: "/ci-runs" },
       {
         key: "conventions",
         label: "Conventions",
@@ -40,6 +41,12 @@ export const NAV: NavGroup[] = [
         href: "/repos/:repoId/conventions",
         gKey: "c",
       },
+    ],
+  },
+  {
+    section: "GLOBAL",
+    items: [
+      { key: "multi-agent", label: "Multi-Agent Review", icon: "Users", href: "/configure-run", gKey: "m" },
     ],
   },
 ];
@@ -71,6 +78,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   { keys: "g s", label: "Go to Skills", group: "Navigation" },
   { keys: "g a", label: "Go to Agents", group: "Navigation" },
   { keys: "g c", label: "Go to Conventions", group: "Navigation" },
+  { keys: "g m", label: "Go to Multi-Agent Review", group: "Navigation" },
   { keys: "j / k", label: "Next / previous finding", group: "Findings" },
   { keys: "a", label: "Accept finding", group: "Findings" },
   { keys: "d", label: "Dismiss finding", group: "Findings" },

@@ -17,6 +17,7 @@ Node ≥ 22 · pnpm ≥ 10 · TypeScript · Docker (Postgres + pgvector, dev-onl
 | `reviewer-core/` | `@devdigest/reviewer-core` | diff → prompt → LLM → findings engine | [reviewer-core/AGENTS.md](reviewer-core/AGENTS.md) |
 | `e2e/` | `@devdigest/e2e` | deterministic browser e2e (agent-browser) | [e2e/AGENTS.md](e2e/AGENTS.md) |
 | `mcp-server/` | `@devdigest/mcp-server` | local MCP server (stdio) exposing PR-review tools over the API | [mcp-server/AGENTS.md](mcp-server/AGENTS.md) |
+| `agent-runner/` | `@devdigest/agent-runner` | CLI that runs inside a target repo's own GitHub Actions to review a PR via `reviewer-core` (Export to CI) | [agent-runner/AGENTS.md](agent-runner/AGENTS.md) |
 
 Cross-package code goes through tsconfig path aliases, not published
 packages — e.g. `server` imports `reviewer-core/src` directly.
@@ -71,6 +72,8 @@ packages — e.g. `server` imports `reviewer-core/src` directly.
 | [docs/project-context.md](docs/project-context.md) | working on Project Context (attached repo `.md` docs injected into reviews as untrusted text; spans `server/`, `reviewer-core/`, `client/`) — endpoints, join tables, skip reasons, limits |
 | [docs/pr-brief.md](docs/pr-brief.md) | working on the PR Brief (Why + Risk summary, risks, review focus on the Overview tab; spans `server/` + `client/`) — endpoints, error reasons, file/line snapping, staleness, the `?tab=diff&file=&line=` deep link |
 | [docs/eval-pipeline.md](docs/eval-pipeline.md) | working on the Eval Pipeline (eval cases from findings, suite runs, recall/precision/citation scoring, Eval Dashboard, compare; spans `server/` + `client/` + a `reviewer-core` field) — endpoints, scoring rules, the prompt-sensitivity experiment and its caveats |
+| [docs/export-to-ci.md](docs/export-to-ci.md) | use when working on Export to CI / the `agent-runner` package / CI run ingestion — spans `server/`, `client/`, and the new `agent-runner/` package |
+| [docs/multi-agent-review.md](docs/multi-agent-review.md) | working on Multi-Agent Review (picking a subset of agents to run with cost/time estimates, the `multi_agent_runs` grouping row, the Columns/Tabs results page, and the "Where agents disagree" conflict panel; spans `server/` + `client/`) — the `agentIds` run-request mode, the combined `GET /multi-agent-runs/:id` payload, the conflict-grouping rule, and `conflicts_status: pending/computed` |
 | [specs/README.md](specs/README.md) | writing a spec for a feature whose own goals require changes in more than one package — single-package specs go in that package's own `specs/` instead |
 | a package's own `AGENTS.md` (linked in the table above) | you're about to touch files inside that package |
 | a package's `docs/` / `specs/` / `INSIGHTS.md` | see that package's own `AGENTS.md` — same "use when" pattern, one level down |

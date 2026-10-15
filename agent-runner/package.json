@@ -1,0 +1,28 @@
+{
+  "name": "@devdigest/agent-runner",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SPEC-05 Export to CI — the CLI that runs inside a target repo's own GitHub Actions workflow. Reads the pull_request event + .devdigest/ config, calls @devdigest/reviewer-core's reviewPullRequest (never reimplements it), writes devdigest-result.json, optionally posts a GitHub review/comment, and exits non-zero when the agent's ci_fail_on gate trips. No workspace tooling (per root CLAUDE.md) — own package.json/lockfile, consumes reviewer-core/src via a tsconfig path alias exactly like server/ does.",
+  "bin": {
+    "devdigest-agent-runner": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "ncc build src/cli.ts -o dist -m"
+  },
+  "dependencies": {
+    "openai": "^4.77.0",
+    "yaml": "^2.9.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@vercel/ncc": "^0.38.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

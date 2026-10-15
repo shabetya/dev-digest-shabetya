@@ -364,6 +364,17 @@ export const CiExportInput = z.object({
   post_as: z.enum(['github_review', 'pr_comment', 'none']).default('github_review'),
   triggers: z.array(z.string()).default(['opened', 'synchronize', 'reopened']),
   base: z.string().default('main'),
+  /**
+   * AC-2 fix: carries the Preview step's hand-edited workflow YAML back to
+   * the server so the edit actually takes effect (Install-via-PR and the
+   * downloaded zip must match what the user saw/edited at Preview, not the
+   * server's freshly regenerated default). When present and non-empty, the
+   * server uses it verbatim as `.github/workflows/devdigest-review.yml`'s
+   * contents instead of the generated default — no full YAML-schema
+   * validation, just a non-empty-string check so garbage input can't crash
+   * generation.
+   */
+  workflow_yaml_override: z.string().nullish(),
 });
 export type CiExportInput = z.infer<typeof CiExportInput>;
 /** Caller-facing input type — `.default()` fields stay optional (web hooks). */
@@ -381,7 +392,10 @@ export type CiInstallation = z.infer<typeof CiInstallation>;
 
 /** Response of `POST /agents/:id/export-ci`. */
 export const CiExport = z.object({
-  installation: CiInstallation,
+  // `null` for a preview-only ("files") call — the repo isn't actually
+  // installed (and `ci_installations` isn't touched) until a PR has been
+  // opened or reused for it.
+  installation: CiInstallation.nullable(),
   files: z.array(CiFile),
   pr_url: z.string().nullable(),
 });

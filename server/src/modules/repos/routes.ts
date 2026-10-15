@@ -11,6 +11,7 @@ import { RepoService } from './service.js';
  *   POST   /repos              → add repo (parse URL, persist, enqueue real clone)
  *   GET    /repos              → list repos (workspace-scoped)
  *   POST   /repos/:id/refresh  → re-fetch clone + bump last_polled_at
+ *   GET    /repos/:id/branches → branch names (GitHub; falls back to default_branch)
  *   DELETE /repos/:id          → remove repo
  *
  * The clone runs as a JobRunner job (kind 'clone') — real `git clone` via the
@@ -38,6 +39,11 @@ export default async function reposRoutes(appBase: FastifyInstance) {
   app.post('/repos/:id/refresh', { schema: { params: IdParams } }, async (req) => {
     const { workspaceId } = await getContext(app.container, req);
     return service.refresh(workspaceId, req.params.id);
+  });
+
+  app.get('/repos/:id/branches', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(app.container, req);
+    return service.listBranches(workspaceId, req.params.id);
   });
 
   app.delete('/repos/:id', { schema: { params: IdParams } }, async (req) => {

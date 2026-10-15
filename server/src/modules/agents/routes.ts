@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { AttachContextBody, CiFailOn, Provider, ReviewStrategy } from '@devdigest/shared';
+import { AgentEstimateList, AttachContextBody, CiFailOn, Provider, ReviewStrategy } from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
 import { NotFoundError } from '../../platform/errors.js';
@@ -19,6 +19,7 @@ const VersionParams = z.object({
 /**
  * A2 — agents module (owner A2).
  *   GET    /agents                  → list (workspace-scoped)
+ *   GET    /agents/estimates        → per-agent cost/time estimate (SPEC-05 AC-22/23)
  *   GET    /agents/:id              → one agent
  *   POST   /agents                  → create
  *   PUT    /agents/:id              → update / toggle enabled (versions config)
@@ -77,6 +78,19 @@ export default async function agentsRoutes(appBase: FastifyInstance) {
     const { workspaceId } = await getContext(app.container, req);
     return service.list(workspaceId);
   });
+
+  // Static path registered ahead of `/agents/:id` — Multi-Agent Review's
+  // picker/Configure-Run page (SPEC-05 AC-22/23) reads this for every
+  // workspace agent's per-agent + combined cost/time estimate.
+  app.get(
+    '/agents/estimates',
+    { schema: { response: { 200: AgentEstimateList } } },
+    async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      const estimates = await service.estimates(workspaceId);
+      return { estimates };
+    },
+  );
 
   app.get('/agents/:id', { schema: { params: IdParams } }, async (req) => {
     const { workspaceId } = await getContext(app.container, req);

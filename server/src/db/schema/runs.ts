@@ -45,11 +45,21 @@ export const agentRuns = pgTable(
     score: integer('score'),
     /** Findings that tripped the agent's gate (severity ≥ ciFailOn). */
     blockers: integer('blockers'),
+    /** The multi-agent run (one "Run multi-agent review" click) this run was
+     *  fanned out from; null for a single-agent run. Set-null on delete of
+     *  the parent so hard-deleting a `multi_agent_runs` row (there is no such
+     *  route today) can't orphan this row's FK — see `multi_agent_runs.
+     *  target_agents` for how the *reverse* deletion (this row deleted via
+     *  `DELETE /runs/:id`) is detected instead. */
+    multiAgentRunId: uuid('multi_agent_run_id').references(() => multiAgentRuns.id, {
+      onDelete: 'set null',
+    }),
   },
   (t) => ({
     prIdx: index('agent_runs_pr_idx').on(t.prId),
     agentIdx: index('agent_runs_agent_idx').on(t.agentId),
     wsIdx: index('agent_runs_ws_idx').on(t.workspaceId),
+    multiAgentRunIdx: index('agent_runs_multi_agent_run_idx').on(t.multiAgentRunId),
     // `status` is nullable (row starts running before a status is ever set in
     // some paths) — CHECK allows NULL to pass (three-valued logic) same as
     // any other CHECK constraint, so this only rejects a bad non-null value.
@@ -100,4 +110,17 @@ export const multiAgentRuns = pgTable('multi_agent_runs', {
     .notNull()
     .references(() => pullRequests.id, { onDelete: 'cascade' }),
   ranAt: timestamp('ran_at', { withTimezone: true }).defaultNow().notNull(),
+  /**
+   * Snapshot of `{agent_id, agent_name}[]` taken at creation time (one entry
+   * per targeted agent). `DELETE /runs/:id` hard-deletes `agent_runs` rows, so
+   * the nullable `agent_runs.multi_agent_run_id` FK alone can't distinguish
+   * "this agent's run was deleted" from "this agent was never part of the
+   * run" once the row is gone — the detail endpoint diffs this snapshot
+   * against the still-live `agent_runs` rows to render a "run deleted"
+   * placeholder for the difference.
+   */
+  targetAgents: jsonb('target_agents')
+    .$type<{ agent_id: string; agent_name: string }[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
 });
